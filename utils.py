@@ -1,15 +1,208 @@
 import re
+import warnings
 from collections import defaultdict
 
+import fresnel
 import freud
 import gsd
 import gsd.hoomd
 import gsd.pygsd
+import matplotlib.cm
 import mbuild as mb
 import numpy as np
 from openbabel import pybel
 
 from cg_compound import CG_Compound
+
+
+def draw_scene(comp, color="cpk", scale=1.0, show_box=False, show_atomistic=False):
+    """
+    Visualize a CG_Compound using fresnel.
+
+    Parameters
+    ----------
+    comp : (CG_Compound), compound to visualize
+    color : ("cpk" or the name of a matplotlib colormap), color scheme to use (default "cpk")
+    scale : (float), scaling factor for the particle, bond, and box radii (default 1.0)
+    show_box : (bool), whether or not to visualize the box. (default False)
+        The function will first check if the user has assigned a box to comp.box, if not,
+        then it will use comp.boundingbox
+    show_atomistic : (bool), whether to visualize the coarse-grain beads overlaid with
+        the atomistic structure (default False)
+
+    Returns
+    -------
+    fresnel.Scene
+    """
+
+    ## Extract some info about the compound
+    N = comp.n_particles
+    particle_names = [p.name for p in comp.particles()]
+
+    # all_bonds.shape is (nbond, 2 ends, xyz)
+    all_bonds = np.stack([np.stack((i[0].pos, i[1].pos)) for i in comp.bonds()])
+
+    N_bonds = all_bonds.shape[0]
+
+    color_array = np.empty((N, 3), dtype="float64")
+    if color == "cpk":
+        # Populate the color_array with colors based on particle name
+        # -- if name is not defined in the dictionary, use pink (the default)
+        for i, n in enumerate(particle_names):
+            try:
+                color_array[i, :] = cpk_colors[n]
+            except KeyError:
+                color_array[i, :] = cpk_colors["default"]
+    else:
+        # Populate the color_array with colors based on particle name
+        # choose colors evenly distributed through a matplotlib colormap
+        try:
+            cmap = matplotlib.cm.get_cmap(name=color)
+        except ValueError:
+            print(
+                "The 'color' argument takes either 'cpk' or the name of a matplotlib colormap."
+            )
+            raise
+        mapper = matplotlib.cm.ScalarMappable(
+            norm=matplotlib.colors.Normalize(vmin=0, vmax=1, clip=True), cmap=cmap
+        )
+        particle_types = list(set(particle_names))
+        N_types = len(particle_types)
+        v = np.linspace(0, 1, N_types)
+        # Color by typeid
+        type_ids = np.array([particle_types.index(i) for i in particle_names])
+        for i in range(N_types):
+            color_array[type_ids == i] = fresnel.color.linear(mapper.to_rgba(v)[i])
+
+    # if no atomistic structure stored -- assume compound is atomistic
+    # and do not increase radius
+    if not hasattr(comp, "atomistic") or comp.atomistic is None:
+        scale_coarse = 1
+    else:
+        scale_coarse = 3
+
+    # Make an array of the radii based on particle name
+    # -- if name is not defined in the dictionary, use default
+    rad_array = np.empty((N), dtype="float64")
+    for i, n in enumerate(particle_names):
+        try:
+            rad_array[i] = radii_dict[n] * scale * scale_coarse
+        except KeyError:
+            rad_array[i] = radii_dict["default"] * scale * scale_coarse
+
+    ## Start building the fresnel scene
+    scene = fresnel.Scene()
+
+    # Spheres for every particle in the system
+    beads = fresnel.geometry.Sphere(scene, N=N)
+    beads.position[:] = comp.xyz
+    beads.material = fresnel.material.Material(roughness=1.0)
+    beads.outline_width = 0.01 * scale
+
+    # use color instead of material.color
+    beads.material.primitive_color_mix = 1.0
+    beads.color[:] = color_array
+
+    # resize radii
+    beads.radius[:] = rad_array
+
+    # bonds
+    bonds = fresnel.geometry.Cylinder(scene, N=N_bonds)
+    bonds.material = fresnel.material.Material(roughness=0.5)
+
+    # It looks better to not have the bonds outlined with the transparent beads
+    if not hasattr(comp, "atomistic") or comp.atomistic is None:
+        bonds.outline_width = 0.01 * scale
+
+        # bonds are white
+        bond_colors = np.ones((N_bonds, 3), dtype="float64")
+
+    # bonds are grey
+    bond_colors = np.ones((N_bonds, 3), dtype="float64") * 0.5
+
+    bonds.material.primitive_color_mix = 1.0
+    bonds.points[:] = all_bonds
+
+    bonds.color[:] = np.stack(
+        [fresnel.color.linear(bond_colors), fresnel.color.linear(bond_colors)], axis=1
+    )
+    bonds.radius[:] = [0.03 * scale] * N_bonds
+
+    if show_box:
+        # Use comp.box, unless it does not exist, then use comp.boundingbox
+        try:
+            freud_box = mb_to_freud_box(comp.box)
+        except AttributeError:
+            freud_box = mb_to_freud_box(comp.boundingbox)
+        # Create box in fresnel
+        fresnel.geometry.Box(scene, freud_box, box_radius=0.008 * scale)
+
+    if show_atomistic:
+        beads.material.spec_trans = 1.0
+        bonds.material.spec_trans = 1.0
+        try:
+            N_atoms = comp.atomistic.n_particles
+            atom_names = [p.name for p in comp.atomistic.particles()]
+        except AttributeError:
+            print("No atomistic structure found to visualize.")
+            raise
+
+        # all_bonds.shape is (nbond, 2 ends, xyz)
+        all_atom_bonds = np.stack(
+            [np.stack((i[0].pos, i[1].pos)) for i in comp.atomistic.bonds()]
+        )
+
+        N_atom_bonds = all_atom_bonds.shape[0]
+
+        atom_color_array = np.empty((N_atoms, 3), dtype="float64")
+        # cpk is used for the atomistic representation
+        for i, n in enumerate(atom_names):
+            try:
+                atom_color_array[i, :] = cpk_colors[n]
+            except KeyError:
+                atom_color_array[i, :] = cpk_colors["default"]
+
+        # Make an array of the radii based on particle name
+        # -- if name is not defined in the dictionary, use default
+        atom_rad_array = np.empty((N_atoms), dtype="float64")
+        for i, n in enumerate(atom_names):
+            try:
+                atom_rad_array[i] = radii_dict[n] * scale
+            except KeyError:
+                atom_rad_array[i] = radii_dict["default"] * scale
+
+        atoms = fresnel.geometry.Sphere(scene, N=N_atoms)
+        atoms.position[:] = comp.atomistic.xyz
+        atoms.material = fresnel.material.Material(roughness=1.0)
+        atoms.outline_width = 0.01 * scale
+
+        # use color instead of material.color
+        atoms.material.primitive_color_mix = 1.0
+        atoms.color[:] = atom_color_array
+
+        # resize radii
+        atoms.radius[:] = atom_rad_array
+
+        # bonds
+        atom_bonds = fresnel.geometry.Cylinder(scene, N=N_atom_bonds)
+        atom_bonds.material = fresnel.material.Material(roughness=0.5)
+        atom_bonds.outline_width = 0.01 * scale
+
+        # bonds are white
+        atom_bond_colors = np.ones((N_atom_bonds, 3), dtype="float64")
+
+        atom_bonds.material.primitive_color_mix = 1.0
+        atom_bonds.points[:] = all_atom_bonds
+
+        atom_bonds.color[:] = np.stack(
+            [fresnel.color.linear(atom_bond_colors), fresnel.color.linear(atom_bond_colors)],
+            axis=1,
+        )
+        atom_bonds.radius[:] = [0.03 * scale] * N_atom_bonds
+
+    # This is necessary for the transparency to work
+    scene.lights = fresnel.light.lightbox()
+    return scene
 
 
 def mb_to_freud_box(box):
@@ -68,14 +261,14 @@ def bin_distribution(vals, nbins, start=None, stop=None):
         start = min(vals)
     if stop == None:
         stop = max(vals)
-    step = (stop-start)/nbins
+    step = (stop - start) / nbins
 
     bins = [i for i in np.arange(start, stop, step)]
-    dist = np.empty([len(bins)-1,2])
+    dist = np.empty([len(bins) - 1, 2])
     for i, length in enumerate(bins[1:]):
-        in_bin = [b for b in vals if b > bins[i] and b < bins[i+1]]
-        dist[i,1] = len(in_bin)
-        dist[i,0] = np.mean((bins[i],bins[i+1]))
+        in_bin = [b for b in vals if b > bins[i] and b < bins[i + 1]]
+        dist[i, 1] = len(in_bin)
+        dist[i, 0] = np.mean((bins[i], bins[i + 1]))
     return dist
 
 
@@ -254,18 +447,16 @@ def gsd_rdf(gsdfile, A_name, B_name, start=0, stop=None, rmax=None, bins=50):
         snap = t[frame]
         box = freud.box.Box(*snap.configuration.box)
         A_pos = snap.particles.position[
-                snap.particles.typeid == snap.particles.types.index(A_name)
-                ]
+            snap.particles.typeid == snap.particles.types.index(A_name)
+        ]
         pos = A_pos
         if A_name != B_name:
             B_pos = snap.particles.position[
-                    snap.particles.typeid == snap.particles.types.index(B_name)
-                    ]
+                snap.particles.typeid == snap.particles.types.index(B_name)
+            ]
             pos = np.concatenate((A_pos, B_pos))
 
-        n_query = freud.locality.AABBQuery.from_system((
-            box, pos
-        ))
+        n_query = freud.locality.AABBQuery.from_system((box, pos))
         rdf.compute(n_query, reset=False)
     return rdf
 
@@ -549,80 +740,6 @@ def coarse(mol, bead_list):
     return cg_compound
 
 
-amber_dict = {
-    "c": "C",
-    "c1": "C",
-    "c2": "C",
-    "c3": "C",
-    "ca": "C",
-    "cp": "C",
-    "cq": "C",
-    "cc": "C",
-    "cd": "C",
-    "ce": "C",
-    "cf": "C",
-    "cg": "C",
-    "ch": "C",
-    "cx": "C",
-    "cy": "C",
-    "cu": "C",
-    "cv": "C",
-    "h1": "H",
-    "h2": "H",
-    "h3": "H",
-    "h4": "H",
-    "h5": "H",
-    "ha": "H",
-    "hc": "H",
-    "hn": "H",
-    "ho": "H",
-    "hp": "H",
-    "hs": "H",
-    "hw": "H",
-    "hx": "H",
-    "f": "F",
-    "cl": "Cl",
-    "br": "Br",
-    "i": "I",
-    "n": "N",
-    "n1": "N",
-    "n2": "N",
-    "n3": "N",
-    "n4": "N",
-    "na": "N",
-    "nb": "N",
-    "nc": "N",
-    "nd": "N",
-    "ne": "N",
-    "nf": "N",
-    "nh": "N",
-    "no": "N",
-    "o": "O",
-    "oh": "O",
-    "os": "O",
-    "ow": "O",
-    "p2": "P",
-    "p3": "P",
-    "p4": "P",
-    "p5": "P",
-    "pb": "P",
-    "pc": "P",
-    "pd": "P",
-    "pe": "P",
-    "pf": "P",
-    "px": "P",
-    "py": "P",
-    "s": "S",
-    "s2": "S",
-    "s4": "S",
-    "s6": "S",
-    "sh": "S",
-    "ss": "S",
-    "sx": "S",
-    "sy": "S",
-}
-
-
 # features SMARTS
 features_dict = {
     "thiophene": "c1sccc1",
@@ -640,3 +757,42 @@ features_dict = {
     "c4": "cC(c)(c)c",
     "cyclopentadienone": "C=C1C(=C)ccC1=O",
 }
+
+
+cpk_colors = {
+    "H": fresnel.color.linear([1.00, 1.00, 1.00]),  # white
+    "C": fresnel.color.linear([0.30, 0.30, 0.30]),  # grey
+    "N": fresnel.color.linear([0.13, 0.20, 1.00]),  # dark blue
+    "O": fresnel.color.linear([1.00, 0.13, 0.00]),  # red
+    "F": fresnel.color.linear([0.12, 0.94, 0.12]),  # green
+    "Cl": fresnel.color.linear([0.12, 0.94, 0.12]),  # green
+    "Br": fresnel.color.linear([0.60, 0.13, 0.00]),  # dark red
+    "I": fresnel.color.linear([0.40, 0.00, 0.73]),  # dark violet
+    "He": fresnel.color.linear([0.00, 1.00, 1.00]),  # cyan
+    "Ne": fresnel.color.linear([0.00, 1.00, 1.00]),  # cyan
+    "Ar": fresnel.color.linear([0.00, 1.00, 1.00]),  # cyan
+    "Xe": fresnel.color.linear([0.00, 1.00, 1.00]),  # cyan
+    "Kr": fresnel.color.linear([0.00, 1.00, 1.00]),  # cyan
+    "P": fresnel.color.linear([1.00, 0.60, 0.00]),  # orange
+    "S": fresnel.color.linear([1.00, 0.90, 0.13]),  # yellow
+    "B": fresnel.color.linear([1.00, 0.67, 0.47]),  # peach
+    "Li": fresnel.color.linear([0.47, 0.00, 1.00]),  # violet
+    "Na": fresnel.color.linear([0.47, 0.00, 1.00]),  # violet
+    "K": fresnel.color.linear([0.47, 0.00, 1.00]),  # violet
+    "Rb": fresnel.color.linear([0.47, 0.00, 1.00]),  # violet
+    "Cs": fresnel.color.linear([0.47, 0.00, 1.00]),  # violet
+    "Fr": fresnel.color.linear([0.47, 0.00, 1.00]),  # violet
+    "Be": fresnel.color.linear([0.00, 0.47, 0.00]),  # dark green
+    "Mg": fresnel.color.linear([0.00, 0.47, 0.00]),  # dark green
+    "Ca": fresnel.color.linear([0.00, 0.47, 0.00]),  # dark green
+    "Sr": fresnel.color.linear([0.00, 0.47, 0.00]),  # dark green
+    "Ba": fresnel.color.linear([0.00, 0.47, 0.00]),  # dark green
+    "Ra": fresnel.color.linear([0.00, 0.47, 0.00]),  # dark green
+    "Ti": fresnel.color.linear([0.60, 0.60, 0.60]),  # grey
+    "Fe": fresnel.color.linear([0.87, 0.47, 0.00]),  # dark orange
+    "default": fresnel.color.linear([0.87, 0.47, 1.00]),  # pink
+}
+
+
+# Made space to add more later
+radii_dict = {"H": 0.05, "default": 0.06}
