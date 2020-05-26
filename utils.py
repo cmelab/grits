@@ -52,7 +52,7 @@ def backmap(cg_compound, bead_dict, bond_dict):
     fine_grained = mb.Compound()
 
     anchors = dict()
-    for i,bead in enumerate(cg_p3ht.particles()):
+    for i,bead in enumerate(cg_compound.particles()):
         smiles = bead_dict[bead.name]["smiles"]
         b = mb.load(smiles, smiles=True)
         b.translate_to(bead.pos)
@@ -78,11 +78,11 @@ def backmap(cg_compound, bead_dict, bond_dict):
                 print(f"{bondname} not defined in bond dictionary.")
                 raise
         # choose a starting distance that is way too big
-        mindist = max(cg_p3ht.boundingbox.lengths)
+        mindist = max(cg_compound.boundingbox.lengths)
         for fi,fj in bonds:
             iatom = anchors[i][fi]
             jatom = anchors[j][fj]
-            dist = utils.distance(iatom.pos,jatom.pos)
+            dist = distance(iatom.pos,jatom.pos)
             if dist < mindist:
                 fi_best = fi
                 fj_best = fj
