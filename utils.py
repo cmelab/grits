@@ -15,6 +15,90 @@ from openbabel import pybel
 from cg_compound import CG_Compound
 
 
+def get_bonded(compound, particle):
+    """
+    Returns a list of particles bonded to the given particle
+    in a compound
+
+    Parameters
+    ----------
+    compound : mbuild.Compound, compound containing particle
+    particle : mbuild.Particle, particle to which we want to
+               find the bonded neighbors.
+
+    Returns
+    -------
+    list of mbuild.Particles
+    """
+    def is_particle(i,j):
+        if i is particle:
+            return j
+        elif j is particle:
+            return i
+        else:
+            return False
+    return [is_particle(i,j) for i,j in compound.bonds() if is_particle(i,j)]
+
+
+def get_index(compound, particle):
+    return [p for p in compound.particles()].index(particle)
+
+def remove_hydrogen(compound, particle):
+    hydrogens = [i for i in get_bonded(compound, particle) if i.name == "H"]
+    if hydrogens:
+        compound.remove(hydrogens[0])
+
+def backmap(cg_compound, bead_dict, bond_dict):
+    fine_grained = mb.Compound()
+
+    anchors = dict()
+    for i,bead in enumerate(cg_p3ht.particles()):
+        smiles = bead_dict[bead.name]["smiles"]
+        b = mb.load(smiles, smiles=True)
+        b.translate_to(bead.pos)
+        anchors[i] = dict()
+        for index in bead_dict[bead.name]["anchors"]:
+            anchors[i][index] = b[index]
+
+        fine_grained.add(b)
+
+    atoms = []
+    for ibead,jbead in cg_compound.bonds():
+        i = get_index(cg_compound, ibead)
+        j = get_index(cg_compound, jbead)
+        names = [ibead.name,jbead.name]
+        bondname = "".join(names)
+        try:
+            bonds = bond_dict[bondname]
+        except KeyError:
+            try:
+                bondname = "".join(names[::-1])
+                bonds = [(j,i) for (i,j) in bond_dict[bondname]]
+            except KeyError:
+                print(f"{bondname} not defined in bond dictionary.")
+                raise
+        # choose a starting distance that is way too big
+        mindist = max(cg_p3ht.boundingbox.lengths)
+        for fi,fj in bonds:
+            iatom = anchors[i][fi]
+            jatom = anchors[j][fj]
+            dist = utils.distance(iatom.pos,jatom.pos)
+            if dist < mindist:
+                fi_best = fi
+                fj_best = fj
+                mindist = dist
+        iatom = anchors[i][fi_best]
+        jatom = anchors[j][fj_best]
+        fine_grained.add_bond((iatom, jatom))
+
+        atoms.append(iatom)
+        atoms.append(jatom)
+
+    for atom in atoms:
+        remove_hydrogen(fine_grained,atom)
+
+    return fine_grained
+
 def draw_scene(comp, color="cpk", scale=1.0, show_box=False, show_atomistic=False):
     """
     Visualize a CG_Compound using fresnel.
