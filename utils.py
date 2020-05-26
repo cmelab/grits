@@ -41,14 +41,69 @@ def get_bonded(compound, particle):
 
 
 def get_index(compound, particle):
+    """
+    Get the index of a particle in the compound so that the particle
+    can be accessed like compound[index]
+
+    Parameters
+    ----------
+    compound: mbuild.Compound, compound which contains particle
+    particle: mbuild.Particle, particle for which to fetch the index
+
+    Returns
+    -------
+    int
+    """
     return [p for p in compound.particles()].index(particle)
 
 def remove_hydrogen(compound, particle):
+    """
+    Remove a hydrogen attached to particle. Particle name must be "H".
+    If no hydrogen is bonded to particle, do nothing.
+
+    Parameters
+    ----------
+    compound: mbuild.Compound, compound which contains particle
+    particle: mbuild.Particle, particle from which to remove a hydrogen
+    """
     hydrogens = [i for i in get_bonded(compound, particle) if i.name == "H"]
     if hydrogens:
         compound.remove(hydrogens[0])
 
 def backmap(cg_compound, bead_dict, bond_dict):
+    """
+    Creates a fine-grained compound from a coarse one given dictionaries
+    specifying the bead and how to place bonds.
+
+    Parameters
+    ----------
+    cg_compound: mbuild.Compound, coarse grained compound
+    bead_dict: dictionary of dictionaries, specifies what SMILES string
+               and bond anchors to use for each bead type
+               For example:
+                 bead_dict = {
+                 "_B": {
+                     "smiles": "c1sccc1",
+                     "anchors": [0,2,4],
+                     },
+                 }
+               specifies that coarse grain bead "_B" should be replaced
+               with the fine-grain structure represented by the SMILES string
+               "c1sccc1", and should form bonds from atoms 0, 2, and 4
+    bond_dict: dictionary of list of tuples, specifies what fine-grain bond
+               should replace the bonds in the coarse structure.
+               For example:
+                bond_dict = {
+                    "_B_B": [(0,2),(2,0)],
+                }
+               specifies that the bond between two "_B" beads should happen
+               in their fine-grain replacement between the 0th and 2nd or
+               the 2nd and 0th atoms
+
+    Returns
+    -------
+    mbuild.Compound
+    """
     fine_grained = mb.Compound()
 
     anchors = dict()
