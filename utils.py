@@ -85,11 +85,14 @@ def backmap(cg_compound, bead_dict, bond_dict):
                  "_B": {
                      "smiles": "c1sccc1",
                      "anchors": [0,2,4],
+                     "posres": 1
                      },
                  }
                specifies that coarse grain bead "_B" should be replaced
                with the fine-grain structure represented by the SMILES string
-               "c1sccc1", and should form bonds from atoms 0, 2, and 4
+               "c1sccc1", should form bonds to other fine-grained beads
+               from atoms 0, 2, and 4, and should have a position restraint
+               attached to atom 1 (optional).
     bond_dict: dictionary of list of tuples, specifies what fine-grain bond
                should replace the bonds in the coarse structure.
                For example:
@@ -114,7 +117,13 @@ def backmap(cg_compound, bead_dict, bond_dict):
         anchors[i] = dict()
         for index in bead_dict[bead.name]["anchors"]:
             anchors[i][index] = b[index]
-
+        try:
+            posres = mb.Particle(name="X", pos=bead.pos)
+            b.add(posres)
+            posres_ind = bead_dict[bead.name]["posres"]
+            b.add_bond((posres,b[posres_ind]))
+        except KeyError:
+            pass
         fine_grained.add(b)
 
     atoms = []
