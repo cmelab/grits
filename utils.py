@@ -118,9 +118,9 @@ def backmap(cg_compound, bead_dict, bond_dict):
         for index in bead_dict[bead.name]["anchors"]:
             anchors[i][index] = b[index]
         try:
+            posres_ind = bead_dict[bead.name]["posres"]
             posres = mb.Particle(name="X", pos=bead.pos)
             b.add(posres)
-            posres_ind = bead_dict[bead.name]["posres"]
             b.add_bond((posres,b[posres_ind]))
         except KeyError:
             pass
