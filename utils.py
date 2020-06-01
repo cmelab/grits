@@ -126,7 +126,7 @@ def backmap(cg_compound, bead_dict, bond_dict):
             pass
         fine_grained.add(b)
 
-    atoms = []
+    bonded_atoms = []
     for ibead,jbead in cg_compound.bonds():
         i = get_index(cg_compound, ibead)
         j = get_index(cg_compound, jbead)
@@ -146,6 +146,10 @@ def backmap(cg_compound, bead_dict, bond_dict):
         for fi,fj in bonds:
             iatom = anchors[i][fi]
             jatom = anchors[j][fj]
+            if (iatom in bonded_atoms) or (jatom in bonded_atoms):
+                # assume only one bond from the CG translates
+                # to the FG structure
+                continue
             dist = distance(iatom.pos,jatom.pos)
             if dist < mindist:
                 fi_best = fi
@@ -155,10 +159,10 @@ def backmap(cg_compound, bead_dict, bond_dict):
         jatom = anchors[j][fj_best]
         fine_grained.add_bond((iatom, jatom))
 
-        atoms.append(iatom)
-        atoms.append(jatom)
+        bonded_atoms.append(iatom)
+        bonded_atoms.append(jatom)
 
-    for atom in atoms:
+    for atom in bonded_atoms:
         remove_hydrogen(fine_grained,atom)
 
     return fine_grained
