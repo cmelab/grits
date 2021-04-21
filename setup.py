@@ -39,11 +39,8 @@ with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 
 # Load the package's __version__.py module as a dictionary.
 about = {}
-if not VERSION:
-    with open(os.path.join(here, NAME, "__version__.py")) as f:
-        exec(f.read(), about)
-else:
-    about["__version__"] = VERSION
+with open(os.path.join(here, NAME, "__version__.py")) as f:
+    exec(f.read(), about)
 
 
 class UploadCommand(Command):
