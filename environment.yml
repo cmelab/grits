@@ -1,0 +1,17 @@
+name: grits
+channels:
+  - conda-forge
+dependencies:
+  - ele
+  - foyer
+  - gsd
+  - hoomd=2.9.6
+  - matplotlib
+  - mbuild
+  - numpy
+  - pip
+  - py3Dmol
+  - pytest
+  - pytest-cov
+  - python=3.7
+  - rdkit
