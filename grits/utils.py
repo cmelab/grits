@@ -10,6 +10,87 @@ import numpy as np
 from openbabel import pybel
 
 
+def convert_types(compound, conversion_dict):
+    """Convert type to element name.
+    """
+    for particle in compound.particles():
+        particle.name = conversion_dict[particle.name]
+
+
+def remove_hydrogens(compound):
+    """
+    Remove all particles with name = "H" in the compound
+    """
+    self.remove([i for i in compound.particles() if i.name == "H"])
+
+
+def get_molecules(compound):
+    """
+    Translates bond_graph.connected_components to particle indices in compound
+
+    Returns
+    -------
+    list of sets of connected atom indices
+    """
+    particle_list = [part for part in compound.particles()]
+    molecules = []
+    for group in compound.bond_graph.connected_components():
+        molecules.append(set(map(particle_list.index, group)))
+    return molecules
+
+
+def get_bonds(compound):
+    """
+    Translates bond_graph.bond_edges to particle indices in compound
+
+    Returns
+    -------
+    list of tuples of bonded atom indices sorted
+    """
+    particle_list = [part for part in compound.particles()]
+    bonds = []
+    for tup in compound.bond_graph.edges():
+        bonds.append(tuple(sorted(map(particle_list.index, tup))))
+    # This sorting is required for coarse-graining
+    bonds.sort(key=lambda tup: (tup[0], tup[1]))
+    return bonds
+
+
+def get_name_inds(compound, name):
+    """
+    Find indices of particles in compound where particle.name matches given name
+
+    Parameters
+    ----------
+    name : str, particle.name in mb.Compound
+
+    Returns
+    -------
+    list of particles indices which match name
+    """
+    return [i for i, p in enumerate(compound.particles()) if p.name == name]
+
+
+def tuple_to_names(compound, tup):
+    """
+    Get the names of particle indices passed in as a tuple.
+
+    Parameters
+    ----------
+    tup : tuple of ints, particle indices
+
+    Returns
+    -------
+    tuple of strings, particle.name of given indices
+    """
+    particles = [part for part in compound.particles()]
+
+    types = []
+    for index in tup:
+        types.append(particles[index].name)
+    return tuple(sorted(types))
+
+
 def get_bonded(compound, particle):
     """
     Returns a list of particles bonded to the given particle
@@ -163,83 +244,6 @@ def backmap(cg_compound, bead_dict, bond_dict):
         remove_hydrogen(fine_grained,atom)
 
     return fine_grained
-
-
-def bin_distribution(vals, nbins, start=None, stop=None):
-    """
-    Calculates a distribution given an array of data
-
-    Parameters
-    ----------
-    vals : np.ndarry (N,), values over which to calculate the distribution
-    start : float, value to start bins (default min(bonds_dict[bond]))
-    stop : float, value to stop bins (default max(bonds_dict[bond]))
-    step : float, step size between bins (default (stop-start)/30)
-
-    Returns
-    -------
-    np.ndarray (nbins,2), where the first column is the mean value of the bin and
-    the second column is number of values which fell into that bin
-    """
-    if start == None:
-        start = min(vals)
-    if stop == None:
-        stop = max(vals)
-    step = (stop - start) / nbins
-
-    bins = [i for i in np.arange(start, stop, step)]
-    dist = np.empty([len(bins) - 1, 2])
-    for i, length in enumerate(bins[1:]):
-        in_bin = [b for b in vals if b > bins[i] and b < bins[i + 1]]
-        dist[i, 1] = len(in_bin)
-        dist[i, 0] = np.mean((bins[i], bins[i + 1]))
-    return dist
-
-
-def autocorr1D(array):
-    """
-    Takes in a linear numpy array, performs autocorrelation
-    function and returns normalized array with half the length
-    of the input
-    """
-    ft = np.fft.rfft(array - np.average(array))
-    acorr = np.fft.irfft(ft * np.conjugate(ft)) / (len(array) * np.var(array))
-    return acorr[0 : len(acorr) // 2]
-
-
-def get_decorr(acorr):
-    """
-    Returns the decorrelation time of the autocorrelation, a 1D numpy array
-    """
-    return np.argmin(acorr > 0)
-
-
-def error_analysis(data):
-    """
-    Returns the standard and relative error given a dataset in a 1D numpy array
-    """
-    serr = np.std(data) / np.sqrt(len(data))
-    rel_err = np.abs(100 * serr / np.average(data))
-    return (serr, rel_err)
-
-
-def get_angle(a, b, c):
-    """
-    Calculates the angle between three points a-b-c
-
-    Parameters
-    ----------
-    a,b,c : np.ndarrays, positions of points a, b, and c
-
-    Returns
-    -------
-    float, angle in radians
-    """
-    ba = a - b
-    bc = c - b
-
-    cos = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
-    return np.arccos(cos)
 
 
 def get_molecules(snapshot):
@@ -422,7 +426,6 @@ def has_common_member(set_a, tup):
     return set_a & set_b
 
 
-
 def num2str(num):
     """
     Returns a capital letter for positive integers up to 701
@@ -500,8 +503,6 @@ def mb_to_freud_box(box):
 
     box_list = list(box.maxs) + [xy, yz, xz]
     return freud.box.Box(*box_list)
-
-
 
 
 # features SMARTS
