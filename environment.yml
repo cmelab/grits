@@ -8,6 +8,7 @@ dependencies:
   - gsd
   - matplotlib
   #- mbuild  
+  - mdanalysis
   - numpy
   - openbabel
   - oset
