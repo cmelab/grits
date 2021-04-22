@@ -1,3 +1,5 @@
+import pytest
+
 from base_test import BaseTest
 from grits import CG_Compound
 
@@ -27,3 +29,16 @@ class Test_CGCompound(BaseTest):
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
+
+    def test_notfoundsmarts(self, methane):
+        cg_beads = [("_A", "CCC")]
+
+        with pytest.warns(UserWarning):
+            CG_Compound(methane, cg_beads)
+
+    def test_atomsleftout(self, p3ht):
+        cg_beads = [("_S", "CCC")]
+
+        with pytest.warns(UserWarning):
+            CG_Compound(p3ht, cg_beads)
+
