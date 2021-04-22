@@ -1,4 +1,5 @@
 from collections import defaultdict
+import re
 
 from mbuild import load, Particle, Compound
 import numpy as np
