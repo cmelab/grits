@@ -2,9 +2,9 @@ import re
 import warnings
 from collections import defaultdict
 
+import freud
 import gsd
 import gsd.hoomd
-import matplotlib.cm
 import mbuild as mb
 import numpy as np
 from openbabel import pybel
@@ -53,6 +53,7 @@ def get_index(compound, particle):
     """
     return [p for p in compound.particles()].index(particle)
 
+
 def remove_hydrogen(compound, particle):
     """
     Remove a hydrogen attached to particle. Particle name must be "H".
@@ -66,6 +67,7 @@ def remove_hydrogen(compound, particle):
     hydrogens = [i for i in get_bonded(compound, particle) if i.name == "H"]
     if hydrogens:
         compound.remove(hydrogens[0])
+
 
 def backmap(cg_compound, bead_dict, bond_dict):
     """
@@ -163,6 +165,43 @@ def backmap(cg_compound, bead_dict, bond_dict):
         remove_hydrogen(fine_grained,atom)
 
     return fine_grained
+
+
+def mb_to_freud_box(box):
+    """
+    Convert an mbuild box object (lengths, angles) to a freud box object (lengths, tilts)
+    These sites were useful reference to calculate the box tilts from the angles:
+    http://gisaxs.com/index.php/Unit_cell
+    https://hoomd-blue.readthedocs.io/en/stable/box.html
+
+    Parameters
+    ----------
+    box : mbuild.box.Box()
+
+    Returns
+    -------
+    freud.box.Box()
+    """
+    Lx = box.lengths[0]
+    Ly = box.lengths[1]
+    Lz = box.lengths[2]
+    alpha = box.angles[0]
+    beta = box.angles[1]
+    gamma = box.angles[2]
+
+    frac = (
+        np.cos(np.radians(alpha)) - np.cos(np.radians(beta)) * np.cos(np.radians(gamma))
+    ) / np.sin(np.radians(gamma))
+
+    c = np.sqrt(1 - np.cos(np.radians(beta)) ** 2 - frac ** 2)
+
+    xy = np.cos(np.radians(gamma)) / np.sin(np.radians(gamma))
+    xz = frac / c
+    yz = np.cos(np.radians(beta)) / c
+
+    box_list = list(box.maxs) + [xy, yz, xz]
+    return freud.box.Box(*box_list)
+
 
 def bin_distribution(vals, nbins, start=None, stop=None):
     """
@@ -580,4 +619,3 @@ features_dict = {
     "c4": "cC(c)(c)c",
     "cyclopentadienone": "C=C1C(=C)ccC1=O",
 }
-
