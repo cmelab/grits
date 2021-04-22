@@ -1,0 +1,28 @@
+name: pytest
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'grits/*'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'grits/*'
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    container:
+        image: cmelab/grits:latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Run pytest with coverage report
+      run: python -m pytest --cov=./ --cov-report=xml -v
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml

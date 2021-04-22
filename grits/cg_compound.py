@@ -6,7 +6,6 @@ from copy import deepcopy
 import freud
 import gsd
 import gsd.hoomd
-import gsd.pygsd
 import mbuild as mb
 import numpy as np
 from openbabel import pybel
@@ -15,7 +14,9 @@ from mbuild.utils.io import import_, run_from_ipython
 from oset import oset as OrderedSet
 from parmed.periodic_table import Element
 
-import utils
+from grits.utils import (
+        has_number, has_common_member, distance, v_distance, mb_to_freud_box
+        )
 
 
 class CG_Compound(mb.Compound):
@@ -43,10 +44,8 @@ class CG_Compound(mb.Compound):
         -------
         CG_Compound
         """
-        f = gsd.pygsd.GSDFile(open(gsdfile, "rb"))
-        t = gsd.hoomd.HOOMDTrajectory(f)
-
-        snap = t[frame]
+        with gsd.hoomd.open(gsdfile, "rb") as f:
+            snap = f[frame]
         bond_array = snap.bonds.group
         n_atoms = snap.particles.N
 
@@ -128,7 +127,7 @@ class CG_Compound(mb.Compound):
         ------
         cmpd : CG_Compound
         """
-        openbabel = mb.utils.io.import_("openbabel")
+        openbabel = import_("openbabel")
         cmpd = CG_Compound()
         resindex_to_cmpd = {}
 
@@ -144,16 +143,15 @@ class CG_Compound(mb.Compound):
                     temp_name = Element[atom.atomicnum]
                 except KeyError:
                     warn(
-                        "No element detected for atom at index "
-                        "{} with number {}, type {}".format(
-                            atom.idx, atom.atomicnum, atom.type
-                        )
+                        f"No element detected for atom at index {atom.idx} "
+                        f"with number {atom.atomicnum}, type {atom.type}"
                     )
                     temp_name = atom.type
             else:
                 temp_name = atom.type
             temp = mb.compound.Particle(name=temp_name, pos=xyz)
-            if hasattr(atom, "residue"):  # Is there a safer way to check for res?
+            # Is there a safer way to check for res?
+            if hasattr(atom, "residue"):
                 if atom.residue.idx not in resindex_to_cmpd:
                     res_cmpd = CG_Compound()
                     resindex_to_cmpd[atom.residue.idx] = res_cmpd
@@ -200,7 +198,7 @@ class CG_Compound(mb.Compound):
         them to within the box.
         """
         try:
-            freud_box = utils.mb_to_freud_box(self.box)
+            freud_box = mb_to_freud_box(self.box)
         except TypeError:
             print("Can't wrap because CG_Compound.box values aren't assigned.")
             return
@@ -247,7 +245,7 @@ class CG_Compound(mb.Compound):
             bad_bonds = [
                 bond
                 for bond in compound.bonds()
-                if utils.distance(bond[0].pos, bond[1].pos) > d_tolerance
+                if distance(bond[0].pos, bond[1].pos) > d_tolerance
             ]
             maybe_outliers = [
                 (particles.index(bond[0]), particles.index(bond[1]))
@@ -290,8 +288,8 @@ class CG_Compound(mb.Compound):
                         b = compound.xyz[list(test_molecule), :]
                         center_a = np.mean(a, axis=0)
                         center_b = np.mean(b, axis=0)
-                        avg_dist_a = np.mean(utils.v_distance(a, center_a))
-                        avg_dist_b = np.mean(utils.v_distance(b, center_b))
+                        avg_dist_a = np.mean(v_distance(a, center_a))
+                        avg_dist_b = np.mean(v_distance(b, center_b))
                 return avg_dist_a > avg_dist_b
 
             def _d_to_center(index):
@@ -299,7 +297,7 @@ class CG_Compound(mb.Compound):
                     if index in molecule:
                         mol_xyz = compound.xyz[list(molecule), :]
                         center = np.mean(mol_xyz, axis=0)
-                        dist = utils.distance(particles[index].pos, center)
+                        dist = distance(particles[index].pos, center)
                 return dist
 
             outliers = set()
@@ -352,7 +350,7 @@ class CG_Compound(mb.Compound):
             # translate the outlier to its real-space position found using
             # freud.box.unwrap. the direction is determined using the
             # difference between the particle position and the molecule center
-            freud_box = utils.mb_to_freud_box(self.box)
+            freud_box = mb_to_freud_box(self.box)
             for outlier in outlier_dict[mol_ind]:
                 image = mol_avg - particles[outlier].pos
                 img = np.where(image > self.box.maxs / 2, 1, 0) + np.where(
@@ -529,7 +527,7 @@ class CG_Compound(mb.Compound):
         np.ndarray(3,), unwrapped coordinates for index in tup[1]
         (if you want to move the first index, enter it as tup[::-1])
         """
-        freud_box = utils.mb_to_freud_box(self.box)
+        freud_box = mb_to_freud_box(self.box)
         pair = [p for i, p in enumerate(self.particles()) if i == tup[0] or i == tup[1]]
         diff = pair[0].pos - pair[1].pos
         img = np.where(diff > self.box.maxs / 2, 1, 0) + np.where(
@@ -817,3 +815,102 @@ amber_dict = {
     "sx": "S",
     "sy": "S",
 }
+
+
+def cg_comp(comp, bead_inds):
+    """
+    given an mbuild compound and bead_inds(list of tup)
+    return coarse-grained mbuild compound
+    """
+    cg_compound = CG_Compound()
+    cg_compound.box = comp.box
+
+    for bead, smarts, bead_name in bead_inds:
+        bead_xyz = comp.xyz[bead, :]
+        avg_xyz = np.mean(bead_xyz, axis=0)
+        bead = mb.Particle(name=bead_name, pos=avg_xyz)
+        bead.smarts_string = smarts
+        cg_compound.add(bead)
+    return cg_compound
+
+
+def coarse(mol, bead_list):
+    """
+    Creates a coarse-grained (CG) compound given a starting structure and
+    smart strings for desired beads.
+
+    Parameters
+    ----------
+    mol : pybel.Molecule
+    bead_list : list of tuples of strings, desired bead name
+    followed by SMARTS string of that bead
+
+    Returns
+    -------
+    CG_Compound
+    """
+    matches = []
+    for i, item in enumerate(bead_list):
+        bead_name, smart_str = item
+        smarts = pybel.Smarts(smart_str)
+        if not smarts.findall(mol):
+            print(f"{smart_str} not found in compound!")
+        for group in smarts.findall(mol):
+            group = tuple(i - 1 for i in group)
+            matches.append((group, smart_str, bead_name))
+
+    seen = set()
+    bead_inds = []
+    for group, smarts, name in matches:
+        # smart strings for rings can share atoms
+        # add bead regardless of whether it was seen
+        if has_number(smarts):
+            for atom in group:
+                seen.add(atom)
+            bead_inds.append((group, smarts, name))
+        # alkyl chains should be exclusive
+        else:
+            if has_common_member(seen, group):
+                pass
+            else:
+                for atom in group:
+                    seen.add(atom)
+                bead_inds.append((group, smarts, name))
+
+    n_atoms = mol.OBMol.NumHvyAtoms()
+    if n_atoms != len(seen):
+        print(
+            "WARNING: Some atoms have been left out of coarse-graining!"
+        )  # TODO make this more informative
+
+    comp = CG_Compound.from_pybel(mol)
+    cg_compound = cg_comp(comp, bead_inds)
+    cg_compound = cg_bonds(comp, cg_compound, bead_inds)
+
+    cg_compound.atomistic = comp
+
+    return cg_compound
+
+
+def cg_bonds(comp, cg_compound, beads):
+    """
+    add bonds based on bonding in aa compound
+    return bonded mbuild compound
+    """
+    bonds = comp.get_bonds()
+    bead_bonds = []
+    for i, (bead_i, _, _) in enumerate(beads[:-1]):
+        for j, (bead_j, _, _) in enumerate(beads[(i + 1) :]):
+            for pair in bonds:
+                if (pair[0] in bead_i) and (pair[1] in bead_j):
+                    bead_bonds.append((i, j + i + 1))
+                if (pair[1] in bead_i) and (pair[0] in bead_j):
+                    bead_bonds.append((i, j + i + 1))
+    for pair in bead_bonds:
+        bond_pair = [
+            particle
+            for i, particle in enumerate(cg_compound.particles())
+            if i == pair[0] or i == pair[1]
+        ]
+        cg_compound.add_bond(bond_pair)
+    return cg_compound
