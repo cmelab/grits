@@ -141,8 +141,8 @@ class CG_Compound(mb.Compound):
                     temp_name = Element[atom.atomicnum]
                 except KeyError:
                     warn(
-                        "No element detected for atom at index {atom.idx} "
-                        "with number {atom.atomicnum}, type {atom.type}"
+                        f"No element detected for atom at index {atom.idx} "
+                        f"with number {atom.atomicnum}, type {atom.type}"
                     )
                     temp_name = atom.type
             else:
