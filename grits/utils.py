@@ -9,8 +9,6 @@ import mbuild as mb
 import numpy as np
 from openbabel import pybel
 
-from cg_compound import CG_Compound
-
 
 def get_bonded(compound, particle):
     """
@@ -167,42 +165,6 @@ def backmap(cg_compound, bead_dict, bond_dict):
     return fine_grained
 
 
-def mb_to_freud_box(box):
-    """
-    Convert an mbuild box object (lengths, angles) to a freud box object (lengths, tilts)
-    These sites were useful reference to calculate the box tilts from the angles:
-    http://gisaxs.com/index.php/Unit_cell
-    https://hoomd-blue.readthedocs.io/en/stable/box.html
-
-    Parameters
-    ----------
-    box : mbuild.box.Box()
-
-    Returns
-    -------
-    freud.box.Box()
-    """
-    Lx = box.lengths[0]
-    Ly = box.lengths[1]
-    Lz = box.lengths[2]
-    alpha = box.angles[0]
-    beta = box.angles[1]
-    gamma = box.angles[2]
-
-    frac = (
-        np.cos(np.radians(alpha)) - np.cos(np.radians(beta)) * np.cos(np.radians(gamma))
-    ) / np.sin(np.radians(gamma))
-
-    c = np.sqrt(1 - np.cos(np.radians(beta)) ** 2 - frac ** 2)
-
-    xy = np.cos(np.radians(gamma)) / np.sin(np.radians(gamma))
-    xz = frac / c
-    yz = np.cos(np.radians(beta)) / c
-
-    box_list = list(box.maxs) + [xy, yz, xz]
-    return freud.box.Box(*box_list)
-
-
 def bin_distribution(vals, nbins, start=None, stop=None):
     """
     Calculates a distribution given an array of data
@@ -278,39 +240,6 @@ def get_angle(a, b, c):
 
     cos = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     return np.arccos(cos)
-
-
-def distance(pos1, pos2):
-    """
-    Calculates euclidean distance between two points.
-
-    Parameters
-    ----------
-    pos1, pos2 : ((3,) numpy.ndarray), xyz coordinates
-        (2D also works)
-
-    Returns
-    -------
-    float distance
-    """
-    return np.linalg.norm(pos1 - pos2)
-
-
-def v_distance(pos_array, pos2):
-    """
-    Calculates euclidean distances between all points in pos_array and pos2.
-
-    Parameters
-    ----------
-    pos_array : ((N,3) numpy.ndarray), array of coordinates
-    pos2 : ((3,) numpy.ndarray), xyz coordinate
-        (2D also works)
-
-    Returns
-    -------
-    (N,) numpy.ndarray of distances
-    """
-    return np.linalg.norm(pos_array - pos2, axis=1)
 
 
 def get_molecules(snapshot):
@@ -493,46 +422,6 @@ def has_common_member(set_a, tup):
     return set_a & set_b
 
 
-def cg_comp(comp, bead_inds):
-    """
-    given an mbuild compound and bead_inds(list of tup)
-    return coarse-grained mbuild compound
-    """
-    cg_compound = CG_Compound()
-    cg_compound.box = comp.box
-
-    for bead, smarts, bead_name in bead_inds:
-        bead_xyz = comp.xyz[bead, :]
-        avg_xyz = np.mean(bead_xyz, axis=0)
-        bead = mb.Particle(name=bead_name, pos=avg_xyz)
-        bead.smarts_string = smarts
-        cg_compound.add(bead)
-    return cg_compound
-
-
-def cg_bonds(comp, cg_compound, beads):
-    """
-    add bonds based on bonding in aa compound
-    return bonded mbuild compound
-    """
-    bonds = comp.get_bonds()
-    bead_bonds = []
-    for i, (bead_i, _, _) in enumerate(beads[:-1]):
-        for j, (bead_j, _, _) in enumerate(beads[(i + 1) :]):
-            for pair in bonds:
-                if (pair[0] in bead_i) and (pair[1] in bead_j):
-                    bead_bonds.append((i, j + i + 1))
-                if (pair[1] in bead_i) and (pair[0] in bead_j):
-                    bead_bonds.append((i, j + i + 1))
-    for pair in bead_bonds:
-        bond_pair = [
-            particle
-            for i, particle in enumerate(cg_compound.particles())
-            if i == pair[0] or i == pair[1]
-        ]
-        cg_compound.add_bond(bond_pair)
-    return cg_compound
-
 
 def num2str(num):
     """
@@ -542,64 +431,6 @@ def num2str(num):
     if num < 26:
         return chr(num + 65)
     return "".join([chr(num // 26 + 64), chr(num % 26 + 65)])
-
-
-def coarse(mol, bead_list):
-    """
-    Creates a coarse-grained (CG) compound given a starting structure and
-    smart strings for desired beads.
-
-    Parameters
-    ----------
-    mol : pybel.Molecule
-    bead_list : list of tuples of strings, desired bead name
-    followed by SMARTS string of that bead
-
-    Returns
-    -------
-    CG_Compound
-    """
-    matches = []
-    for i, item in enumerate(bead_list):
-        bead_name, smart_str = item
-        smarts = pybel.Smarts(smart_str)
-        if not smarts.findall(mol):
-            print(f"{smart_str} not found in compound!")
-        for group in smarts.findall(mol):
-            group = tuple(i - 1 for i in group)
-            matches.append((group, smart_str, bead_name))
-
-    seen = set()
-    bead_inds = []
-    for group, smarts, name in matches:
-        # smart strings for rings can share atoms
-        # add bead regardless of whether it was seen
-        if has_number(smarts):
-            for atom in group:
-                seen.add(atom)
-            bead_inds.append((group, smarts, name))
-        # alkyl chains should be exclusive
-        else:
-            if has_common_member(seen, group):
-                pass
-            else:
-                for atom in group:
-                    seen.add(atom)
-                bead_inds.append((group, smarts, name))
-
-    n_atoms = mol.OBMol.NumHvyAtoms()
-    if n_atoms != len(seen):
-        print(
-            "WARNING: Some atoms have been left out of coarse-graining!"
-        )  # TODO make this more informative
-
-    comp = CG_Compound.from_pybel(mol)
-    cg_compound = cg_comp(comp, bead_inds)
-    cg_compound = cg_bonds(comp, cg_compound, bead_inds)
-
-    cg_compound.atomistic = comp
-
-    return cg_compound
 
 
 # features SMARTS
