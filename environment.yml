@@ -6,7 +6,6 @@ dependencies:
   - freud
   - foyer
   - gsd
-  - hoomd=2.9.6
   - matplotlib
   - mbuild
   - numpy
