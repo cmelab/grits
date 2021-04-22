@@ -4,11 +4,11 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'grits/*'
+      - 'grits/**'
   pull_request:
     branches: [ master ]
     paths:
-      - 'grits/*'
+      - 'grits/**'
 
 jobs:
   pytest:
