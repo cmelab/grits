@@ -14,7 +14,9 @@ from mbuild.utils.io import import_, run_from_ipython
 from oset import oset as OrderedSet
 from parmed.periodic_table import Element
 
-from grits import utils
+from grits.utils import (
+        has_number, has_common_member, distance, v_distance, mb_to_freud_box
+        )
 
 
 class CG_Compound(mb.Compound):
@@ -196,7 +198,7 @@ class CG_Compound(mb.Compound):
         them to within the box.
         """
         try:
-            freud_box = utils.mb_to_freud_box(self.box)
+            freud_box = mb_to_freud_box(self.box)
         except TypeError:
             print("Can't wrap because CG_Compound.box values aren't assigned.")
             return
@@ -243,7 +245,7 @@ class CG_Compound(mb.Compound):
             bad_bonds = [
                 bond
                 for bond in compound.bonds()
-                if utils.distance(bond[0].pos, bond[1].pos) > d_tolerance
+                if distance(bond[0].pos, bond[1].pos) > d_tolerance
             ]
             maybe_outliers = [
                 (particles.index(bond[0]), particles.index(bond[1]))
@@ -286,8 +288,8 @@ class CG_Compound(mb.Compound):
                         b = compound.xyz[list(test_molecule), :]
                         center_a = np.mean(a, axis=0)
                         center_b = np.mean(b, axis=0)
-                        avg_dist_a = np.mean(utils.v_distance(a, center_a))
-                        avg_dist_b = np.mean(utils.v_distance(b, center_b))
+                        avg_dist_a = np.mean(v_distance(a, center_a))
+                        avg_dist_b = np.mean(v_distance(b, center_b))
                 return avg_dist_a > avg_dist_b
 
             def _d_to_center(index):
@@ -295,7 +297,7 @@ class CG_Compound(mb.Compound):
                     if index in molecule:
                         mol_xyz = compound.xyz[list(molecule), :]
                         center = np.mean(mol_xyz, axis=0)
-                        dist = utils.distance(particles[index].pos, center)
+                        dist = distance(particles[index].pos, center)
                 return dist
 
             outliers = set()
@@ -348,7 +350,7 @@ class CG_Compound(mb.Compound):
             # translate the outlier to its real-space position found using
             # freud.box.unwrap. the direction is determined using the
             # difference between the particle position and the molecule center
-            freud_box = utils.mb_to_freud_box(self.box)
+            freud_box = mb_to_freud_box(self.box)
             for outlier in outlier_dict[mol_ind]:
                 image = mol_avg - particles[outlier].pos
                 img = np.where(image > self.box.maxs / 2, 1, 0) + np.where(
@@ -525,7 +527,7 @@ class CG_Compound(mb.Compound):
         np.ndarray(3,), unwrapped coordinates for index in tup[1]
         (if you want to move the first index, enter it as tup[::-1])
         """
-        freud_box = utils.mb_to_freud_box(self.box)
+        freud_box = mb_to_freud_box(self.box)
         pair = [p for i, p in enumerate(self.particles()) if i == tup[0] or i == tup[1]]
         diff = pair[0].pos - pair[1].pos
         img = np.where(diff > self.box.maxs / 2, 1, 0) + np.where(
@@ -813,75 +815,6 @@ amber_dict = {
     "sx": "S",
     "sy": "S",
 }
-
-
-def distance(pos1, pos2):
-    """
-    Calculates euclidean distance between two points.
-
-    Parameters
-    ----------
-    pos1, pos2 : ((3,) numpy.ndarray), xyz coordinates
-        (2D also works)
-
-    Returns
-    -------
-    float distance
-    """
-    return np.linalg.norm(pos1 - pos2)
-
-
-def v_distance(pos_array, pos2):
-    """
-    Calculates euclidean distances between all points in pos_array and pos2.
-
-    Parameters
-    ----------
-    pos_array : ((N,3) numpy.ndarray), array of coordinates
-    pos2 : ((3,) numpy.ndarray), xyz coordinate
-        (2D also works)
-
-    Returns
-    -------
-    (N,) numpy.ndarray of distances
-    """
-    return np.linalg.norm(pos_array - pos2, axis=1)
-
-
-def mb_to_freud_box(box):
-    """
-    Convert an mbuild box object (lengths, angles) to a freud box object (lengths, tilts)
-    These sites were useful reference to calculate the box tilts from the angles:
-    http://gisaxs.com/index.php/Unit_cell
-    https://hoomd-blue.readthedocs.io/en/stable/box.html
-
-    Parameters
-    ----------
-    box : mbuild.box.Box()
-
-    Returns
-    -------
-    freud.box.Box()
-    """
-    Lx = box.lengths[0]
-    Ly = box.lengths[1]
-    Lz = box.lengths[2]
-    alpha = box.angles[0]
-    beta = box.angles[1]
-    gamma = box.angles[2]
-
-    frac = (
-        np.cos(np.radians(alpha)) - np.cos(np.radians(beta)) * np.cos(np.radians(gamma))
-    ) / np.sin(np.radians(gamma))
-
-    c = np.sqrt(1 - np.cos(np.radians(beta)) ** 2 - frac ** 2)
-
-    xy = np.cos(np.radians(gamma)) / np.sin(np.radians(gamma))
-    xz = frac / c
-    yz = np.cos(np.radians(beta)) / c
-
-    box_list = list(box.maxs) + [xy, yz, xz]
-    return freud.box.Box(*box_list)
 
 
 def cg_comp(comp, bead_inds):

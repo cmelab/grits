@@ -433,6 +433,77 @@ def num2str(num):
     return "".join([chr(num // 26 + 64), chr(num % 26 + 65)])
 
 
+def distance(pos1, pos2):
+    """
+    Calculates euclidean distance between two points.
+
+    Parameters
+    ----------
+    pos1, pos2 : ((3,) numpy.ndarray), xyz coordinates
+        (2D also works)
+
+    Returns
+    -------
+    float distance
+    """
+    return np.linalg.norm(pos1 - pos2)
+
+
+def v_distance(pos_array, pos2):
+    """
+    Calculates euclidean distances between all points in pos_array and pos2.
+
+    Parameters
+    ----------
+    pos_array : ((N,3) numpy.ndarray), array of coordinates
+    pos2 : ((3,) numpy.ndarray), xyz coordinate
+        (2D also works)
+
+    Returns
+    -------
+    (N,) numpy.ndarray of distances
+    """
+    return np.linalg.norm(pos_array - pos2, axis=1)
+
+
+def mb_to_freud_box(box):
+    """
+    Convert an mbuild box object (lengths, angles) to a freud box object (lengths, tilts)
+    These sites were useful reference to calculate the box tilts from the angles:
+    http://gisaxs.com/index.php/Unit_cell
+    https://hoomd-blue.readthedocs.io/en/stable/box.html
+
+    Parameters
+    ----------
+    box : mbuild.box.Box()
+
+    Returns
+    -------
+    freud.box.Box()
+    """
+    Lx = box.lengths[0]
+    Ly = box.lengths[1]
+    Lz = box.lengths[2]
+    alpha = box.angles[0]
+    beta = box.angles[1]
+    gamma = box.angles[2]
+
+    frac = (
+        np.cos(np.radians(alpha)) - np.cos(np.radians(beta)) * np.cos(np.radians(gamma))
+    ) / np.sin(np.radians(gamma))
+
+    c = np.sqrt(1 - np.cos(np.radians(beta)) ** 2 - frac ** 2)
+
+    xy = np.cos(np.radians(gamma)) / np.sin(np.radians(gamma))
+    xz = frac / c
+    yz = np.cos(np.radians(beta)) / c
+
+    box_list = list(box.maxs) + [xy, yz, xz]
+    return freud.box.Box(*box_list)
+
+
+
+
 # features SMARTS
 features_dict = {
     "thiophene": "c1sccc1",
