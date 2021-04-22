@@ -6,7 +6,6 @@ from copy import deepcopy
 import freud
 import gsd
 import gsd.hoomd
-import gsd.pygsd
 import mbuild as mb
 import numpy as np
 from openbabel import pybel
@@ -43,10 +42,8 @@ class CG_Compound(mb.Compound):
         -------
         CG_Compound
         """
-        f = gsd.pygsd.GSDFile(open(gsdfile, "rb"))
-        t = gsd.hoomd.HOOMDTrajectory(f)
-
-        snap = t[frame]
+        with gsd.hoomd.open(gsdfile, "rb") as f:
+            snap = f[frame]
         bond_array = snap.bonds.group
         n_atoms = snap.particles.N
 
@@ -144,16 +141,15 @@ class CG_Compound(mb.Compound):
                     temp_name = Element[atom.atomicnum]
                 except KeyError:
                     warn(
-                        "No element detected for atom at index "
-                        "{} with number {}, type {}".format(
-                            atom.idx, atom.atomicnum, atom.type
-                        )
+                        "No element detected for atom at index {atom.idx} "
+                        "with number {atom.atomicnum}, type {atom.type}"
                     )
                     temp_name = atom.type
             else:
                 temp_name = atom.type
             temp = mb.compound.Particle(name=temp_name, pos=xyz)
-            if hasattr(atom, "residue"):  # Is there a safer way to check for res?
+            # Is there a safer way to check for res?
+            if hasattr(atom, "residue"):
                 if atom.residue.idx not in resindex_to_cmpd:
                     res_cmpd = CG_Compound()
                     resindex_to_cmpd[atom.residue.idx] = res_cmpd

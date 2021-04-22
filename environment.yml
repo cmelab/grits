@@ -3,12 +3,14 @@ channels:
   - conda-forge
 dependencies:
   - ele
+  - freud
   - foyer
   - gsd
   - hoomd=2.9.6
   - matplotlib
   - mbuild
   - numpy
+  - openbabel
   - pip
   - py3Dmol
   - pytest
