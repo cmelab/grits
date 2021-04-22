@@ -4,7 +4,7 @@ from warnings import warn
 
 import numpy as np
 from openbabel import pybel
-from mbuild.utils.io import import_, run_from_ipython
+from mbuild.utils.io import run_from_ipython
 from mbuild import Compound, Particle, clone
 
 from grits.utils import has_number, has_common_member, get_bonds
@@ -104,50 +104,18 @@ class CG_Compound(Compound):
             ]
             self.add_bond(bond_pair)
 
-    def visualize(self, show_ports=False, backend='py3dmol',
-            color_scheme={}, show_atomistic=False, scale=1.0): # pragma: no cover
-        """
-        Visualize the Compound using py3dmol (default) or nglview.
-        Allows for visualization of a Compound within a Jupyter Notebook.
-        Parameters
-        ----------
-        show_ports : bool, optional, default=False
-            Visualize Ports in addition to Particles
-        backend : str, optional, default='py3dmol'
-            Specify the backend package to visualize compounds
-            Currently supported: py3dmol, nglview
-        color_scheme : dict, optional
-            Specify coloring for non-elemental particles
-            keys are strings of the particle names
-            values are strings of the colors
-            i.e. {'_CGBEAD': 'blue'}
-        NOTE!: Only py3dmol will work with CG_Compounds
-        """
-        viz_pkg = {'nglview': self._visualize_nglview,
-                'py3dmol': self._visualize_py3dmol}
-        if run_from_ipython():
-            if backend.lower() in viz_pkg:
-                return viz_pkg[backend.lower()](show_ports=show_ports,
-                        color_scheme=color_scheme, show_atomistic=show_atomistic, scale=scale)
-            else:
-                raise RuntimeError("Unsupported visualization " +
-                        "backend ({}). ".format(backend) +
-                        "Currently supported backends include nglview and py3dmol")
-
-        else:
-            raise RuntimeError('Visualization is only supported in Jupyter '
-                               'Notebooks.')
-
-
-    def _visualize_py3dmol(self,
+    def visualize(
+            self,
             show_ports=False,
             color_scheme={},
             show_atomistic=False,
-            scale=1.0):
+            scale=1.0
+            ):  # pragma: no cover
         """
-        Visualize the Compound using py3Dmol.
+        Visualize the Compound using py3dmol.
         Allows for visualization of a Compound within a Jupyter Notebook.
-        Modified to show atomistic elements (translucent) with larger CG beads.
+        Modified to from mbuild.Compound.visualize to show atomistic elements
+        (translucent) with larger CG beads.
 
         Parameters
         ----------
@@ -158,13 +126,18 @@ class CG_Compound(Compound):
             keys are strings of the particle names
             values are strings of the colors
             i.e. {'_CGBEAD': 'blue'}
-        show_atomistic : show the atomistic structure stored in CG_Compound.atomistic
+        show_atomistic : bool
+            show the atomistic structure stored in CG_Compound.atomistic
 
         Returns
         ------
         view : py3Dmol.view
         """
-        py3Dmol = import_("py3Dmol")
+        if not run_from_ipython():
+            raise RuntimeError(
+                'Visualization is only supported in Jupyter Notebooks.'
+                )
+        import py3Dmol
 
         atom_names = []
 
