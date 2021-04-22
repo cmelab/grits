@@ -2,6 +2,7 @@ import os
 import tempfile
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
+from warnings import warn
 
 import freud
 import gsd
@@ -11,6 +12,7 @@ import numpy as np
 from openbabel import pybel
 from mbuild.exceptions import MBuildError
 from mbuild.utils.io import import_, run_from_ipython
+from mbuild import Compound
 from oset import oset as OrderedSet
 from parmed.periodic_table import Element
 
@@ -374,11 +376,10 @@ def coarse(mol, bead_list):
 
     n_atoms = mol.OBMol.NumHvyAtoms()
     if n_atoms != len(seen):
-        print(
-            "WARNING: Some atoms have been left out of coarse-graining!"
-        )  # TODO make this more informative
+        warn("Some atoms have been left out of coarse-graining!")
+        # TODO make this more informative
 
-    comp = CG_Compound.from_pybel(mol)
+    comp = CG_Compound.from_mbuild(mb.load(mol))
     cg_compound = cg_comp(comp, bead_inds)
     cg_compound = cg_bonds(comp, cg_compound, bead_inds)
 
