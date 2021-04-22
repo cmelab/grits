@@ -5,7 +5,7 @@ from warnings import warn
 import numpy as np
 from openbabel import pybel
 from mbuild.utils.io import run_from_ipython
-from mbuild import Compound, Particle, clone
+from mbuild import Compound, clone
 
 from grits.utils import has_number, has_common_member, get_bonds
 
@@ -27,7 +27,7 @@ class CG_Compound(Compound):
     bead_inds
     """
     def __init__(self, compound, bead_list):
-        super().__init__()
+        super(CG_Compound, self).__init__()
         self.atomistic = compound
 
         mol = compound.to_pybel()
@@ -80,8 +80,7 @@ class CG_Compound(Compound):
         for bead, smarts, bead_name in self.bead_inds:
             bead_xyz = self.atomistic.xyz[bead, :]
             avg_xyz = np.mean(bead_xyz, axis=0)
-            bead = Particle(name=bead_name, pos=avg_xyz)
-            bead.smarts_string = smarts
+            bead = Bead(name=bead_name, pos=avg_xyz, smarts=smarts)
             self.add(bead)
 
     def cg_bonds(self):
@@ -99,9 +98,7 @@ class CG_Compound(Compound):
                     if (pair[1] in bead_i) and (pair[0] in bead_j):
                         bead_bonds.append((i, j + i + 1))
         for pair in bead_bonds:
-            bond_pair = [
-                p for i, p in enumerate(self.particles()) if i in pair
-            ]
+            bond_pair = [p for i, p in enumerate(self) if i in pair]
             self.add_bond(bond_pair)
 
     def visualize(
@@ -143,7 +140,7 @@ class CG_Compound(Compound):
 
         if self.atomistic is not None and show_atomistic:
             atomistic = clone(self.atomistic)
-            for particle in atomistic.particles():
+            for particle in atomistic:
                 if not particle.name:
                     particle.name = "UNK"
                 else:
@@ -160,7 +157,7 @@ class CG_Compound(Compound):
             modified_color_scheme[name] = color
 
         cg_names = []
-        for particle in coarse.particles():
+        for particle in coarse:
             if not particle.name:
                 particle.name = "UNK"
             else:
@@ -229,3 +226,10 @@ class CG_Compound(Compound):
         view.zoomTo()
 
         return view
+
+
+class Bead(Compound):
+    def __init__(self, smarts=None, **kwargs):
+        self.smarts = smarts
+        super(Bead, self).__init__(**kwargs)
+
