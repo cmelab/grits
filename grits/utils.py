@@ -1,13 +1,7 @@
-import re
-import warnings
 from collections import defaultdict
 
-import freud
-import gsd
-import gsd.hoomd
-import mbuild as mb
+from mbuild import load, Particle, Compound
 import numpy as np
-from openbabel import pybel
 
 
 def convert_types(compound, conversion_dict):
@@ -15,13 +9,6 @@ def convert_types(compound, conversion_dict):
     """
     for particle in compound.particles():
         particle.name = conversion_dict[particle.name]
-
-
-def remove_hydrogens(compound):
-    """
-    Remove all particles with name = "H" in the compound
-    """
-    self.remove([i for i in compound.particles() if i.name == "H"])
 
 
 def get_molecules(compound):
@@ -62,7 +49,7 @@ def get_name_inds(compound, name):
 
     Parameters
     ----------
-    name : str, particle.name in mb.Compound
+    name : str, particle.name in mbuild.Compound
 
     Returns
     -------
@@ -148,6 +135,13 @@ def remove_hydrogen(compound, particle):
         compound.remove(hydrogens[0])
 
 
+def remove_hydrogens(compound):
+    """
+    Remove all particles with name = "H" in the compound
+    """
+    self.remove([i for i in compound.particles() if i.name == "H"])
+
+
 def backmap(cg_compound, bead_dict, bond_dict):
     """
     Creates a fine-grained compound from a coarse one given dictionaries
@@ -185,19 +179,19 @@ def backmap(cg_compound, bead_dict, bond_dict):
     -------
     mbuild.Compound
     """
-    fine_grained = mb.Compound()
+    fine_grained = Compound()
 
     anchors = dict()
     for i,bead in enumerate(cg_compound.particles()):
         smiles = bead_dict[bead.name]["smiles"]
-        b = mb.load(smiles, smiles=True)
+        b = load(smiles, smiles=True)
         b.translate_to(bead.pos)
         anchors[i] = dict()
         for index in bead_dict[bead.name]["anchors"]:
             anchors[i][index] = b[index]
         try:
             posres_ind = bead_dict[bead.name]["posres"]
-            posres = mb.Particle(name="X", pos=bead.pos)
+            posres = Particle(name="X", pos=bead.pos)
             b.add(posres)
             b.add_bond((posres,b[posres_ind]))
         except KeyError:
@@ -467,42 +461,6 @@ def v_distance(pos_array, pos2):
     (N,) numpy.ndarray of distances
     """
     return np.linalg.norm(pos_array - pos2, axis=1)
-
-
-def mb_to_freud_box(box):
-    """
-    Convert an mbuild box object (lengths, angles) to a freud box object (lengths, tilts)
-    These sites were useful reference to calculate the box tilts from the angles:
-    http://gisaxs.com/index.php/Unit_cell
-    https://hoomd-blue.readthedocs.io/en/stable/box.html
-
-    Parameters
-    ----------
-    box : mbuild.box.Box()
-
-    Returns
-    -------
-    freud.box.Box()
-    """
-    Lx = box.lengths[0]
-    Ly = box.lengths[1]
-    Lz = box.lengths[2]
-    alpha = box.angles[0]
-    beta = box.angles[1]
-    gamma = box.angles[2]
-
-    frac = (
-        np.cos(np.radians(alpha)) - np.cos(np.radians(beta)) * np.cos(np.radians(gamma))
-    ) / np.sin(np.radians(gamma))
-
-    c = np.sqrt(1 - np.cos(np.radians(beta)) ** 2 - frac ** 2)
-
-    xy = np.cos(np.radians(gamma)) / np.sin(np.radians(gamma))
-    xz = frac / c
-    yz = np.cos(np.radians(beta)) / c
-
-    box_list = list(box.maxs) + [xy, yz, xz]
-    return freud.box.Box(*box_list)
 
 
 # features SMARTS
