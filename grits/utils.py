@@ -8,7 +8,7 @@ import numpy as np
 def convert_types(compound, conversion_dict):
     """Convert type to element name.
     """
-    for particle in compound.particles():
+    for particle in compound:
         particle.name = conversion_dict[particle.name]
 
 
@@ -20,7 +20,7 @@ def get_molecules(compound):
     -------
     list of sets of connected atom indices
     """
-    particle_list = [part for part in compound.particles()]
+    particle_list = [p for p in compound]
     molecules = []
     for group in compound.bond_graph.connected_components():
         molecules.append(set(map(particle_list.index, group)))
@@ -35,7 +35,7 @@ def get_bonds(compound):
     -------
     list of tuples of bonded atom indices sorted
     """
-    particle_list = [part for part in compound.particles()]
+    particle_list = [p for p in compound]
     bonds = []
     for tup in compound.bond_graph.edges():
         bonds.append(tuple(sorted(map(particle_list.index, tup))))
@@ -56,7 +56,7 @@ def get_name_inds(compound, name):
     -------
     list of particles indices which match name
     """
-    return [i for i, p in enumerate(compound.particles()) if p.name == name]
+    return [i for i, p in enumerate(compound) if p.name == name]
 
 
 def tuple_to_names(compound, tup):
@@ -71,7 +71,7 @@ def tuple_to_names(compound, tup):
     -------
     tuple of strings, particle.name of given indices
     """
-    particles = [part for part in compound.particles()]
+    particles = [p for p in compound]
 
     types = []
     for index in tup:
@@ -118,7 +118,7 @@ def get_index(compound, particle):
     -------
     int
     """
-    return [p for p in compound.particles()].index(particle)
+    return [p for p in compound].index(particle)
 
 
 def remove_hydrogen(compound, particle):
@@ -140,7 +140,7 @@ def remove_hydrogens(compound):
     """
     Remove all particles with name = "H" in the compound
     """
-    self.remove([i for i in compound.particles() if i.name == "H"])
+    compound.remove([i for i in compound if i.name == "H"])
 
 
 def backmap(cg_compound, bead_dict, bond_dict):
@@ -183,7 +183,7 @@ def backmap(cg_compound, bead_dict, bond_dict):
     fine_grained = Compound()
 
     anchors = dict()
-    for i,bead in enumerate(cg_compound.particles()):
+    for i,bead in enumerate(cg_compound):
         smiles = bead_dict[bead.name]["smiles"]
         b = load(smiles, smiles=True)
         b.translate_to(bead.pos)
@@ -270,7 +270,7 @@ def get_molecules(snapshot):
             bond_graph[row[1]].add(row[0])
         return bond_graph
 
-    def _get_connected_group(node, already_seen):
+    def _get_connected_group(node, seen):
         """
         This code adapted from Matias Thayer's:
         https://stackoverflow.com/questions/10301000/python-connected-components
@@ -280,18 +280,18 @@ def get_molecules(snapshot):
         nodes = set([node])
         while nodes:
             node = nodes.pop()
-            already_seen.add(node)
-            nodes.update(graph[node] - already_seen)
+            seen.add(node)
+            nodes.update(graph[node] - seen)
             result.add(node)
-        return result, already_seen
+        return result, seen
 
     graph = _snap_bond_graph(snapshot)
 
-    already_seen = set()
+    seen = set()
     result = []
     for node in graph:
-        if node not in already_seen:
-            connected_group, already_seen = _get_connected_group(node, already_seen)
+        if node not in seen:
+            connected_group, seen = _get_connected_group(node, seen)
             result.append(connected_group)
     return result
 
@@ -462,22 +462,3 @@ def v_distance(pos_array, pos2):
     (N,) numpy.ndarray of distances
     """
     return np.linalg.norm(pos_array - pos2, axis=1)
-
-
-# features SMARTS
-features_dict = {
-    "thiophene": "c1sccc1",
-    "thiophene_F": "c1scc(F)c1",
-    "alkyl_3": "CCC",
-    "benzene": "c1ccccc1",
-    "splitring1": "csc",
-    "splitring2": "cc",
-    "twobenzene": "c2ccc1ccccc1c2",
-    "ring_F": "c1sc2c(scc2c1F)",
-    "ring_3": "c3sc4cc5ccsc5cc4c3",
-    "chain1": "OCC(CC)CCCC",
-    "chain2": "CCCCC(CC)COC(=O)",
-    "cyclopentadiene": "C1cccc1",
-    "c4": "cC(c)(c)c",
-    "cyclopentadienone": "C=C1C(=C)ccC1=O",
-}
