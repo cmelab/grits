@@ -42,12 +42,12 @@ def backmap(cg_compound, bead_dict, bond_dict=None):
     -------
     mbuild.Compound
     """
-    fine_grained = fg_particles(cg_compound, bead_dict)
+    fine_grained, anchors = fg_particles(cg_compound, bead_dict)
 
     if bond_dict is None:
         return fine_grained
 
-    fine_grained = fg_bonds(cg_compound, bond_dict, fine_grained)
+    fine_grained = fg_bonds(cg_compound, bond_dict, anchors, fine_grained)
     return fine_grained
 
 
@@ -70,10 +70,10 @@ def fg_particles(cg_compound, bead_dict):
         except KeyError:
             pass
         fine_grained.add(b)
-    return fine_grained
+    return fine_grained, anchors
 
 
-def fg_bonds(cg_compound, bond_dict, fine_grained):
+def fg_bonds(cg_compound, bond_dict, anchors, fine_grained):
     bonded_atoms = []
     for ibead,jbead in cg_compound.bonds():
         i = get_index(cg_compound, ibead)
