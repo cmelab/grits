@@ -2,7 +2,7 @@ name: grits
 channels:
   - conda-forge
 dependencies:
-  - ele
+  - ele #
   #- mbuild  
   - mdanalysis
   - mdtraj #
