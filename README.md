@@ -1,8 +1,8 @@
-# GRiTS : Grits Reduce/Restore Topology with SMILES
+# GRiTS : Grits Reduce/Restore Topology with SMARTS/SMILES
 [![build](https://github.com/cmelab/grits/actions/workflows/build_cpu.yml/badge.svg)](https://github.com/cmelab/grits/actions/workflows/build_cpu.yml)
 [![pytest](https://github.com/cmelab/grits/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/grits/actions/workflows/pytest.yml)
 [![codecov](https://codecov.io/gh/cmelab/grits/branch/main/graph/badge.svg?token=lGG8Zf65HP)](https://codecov.io/gh/cmelab/grits)
 
 ![GRiTS workflow](/.github/grits.png)
 
-A toolkit for working with coarse-grain systems
+A toolkit for working with coarse-grain systems. GRiTS uses [mBuild](https://github.com/mosdef-hub/mbuild) to build up molecules and [SMILES](https://www.daylight.com/dayhtml/doc/theory/theory.smiles.html)/[SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) chemical grammars to facilitate the mapping from fine-to-coarse and coarse-to-fine.
