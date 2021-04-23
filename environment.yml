@@ -3,23 +3,20 @@ channels:
   - conda-forge
 dependencies:
   - ele
-  - freud
-  - foyer
-  - gsd
-  - matplotlib
   #- mbuild  
   - mdanalysis
+  - mdtraj #
   - numpy
   - openbabel
-  - oset
-  - packmol>=18
-  - parmed>=3.4.0
+  - oset #
+  - packmol>=18 #
+  - parmed>=3.4.0 #
   - pip
   - py3Dmol
   - pytest
   - pytest-cov
   - python=3.7
   - rdkit
-  - scipy
+  - scipy #
   - pip:
     - git+https://github.com/jennyfothergill/mbuild@feat/from_hoomdsnap
