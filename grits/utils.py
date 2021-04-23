@@ -3,28 +3,6 @@ import re
 import numpy as np
 
 
-def convert_types(compound, conversion_dict):
-    """Convert type to element name.
-    """
-    for particle in compound:
-        particle.name = conversion_dict[particle.name]
-
-
-def get_molecules(compound):
-    """
-    Translates bond_graph.connected_components to particle indices in compound
-
-    Returns
-    -------
-    list of sets of connected atom indices
-    """
-    particle_list = [p for p in compound]
-    molecules = []
-    for group in compound.bond_graph.connected_components():
-        molecules.append(set(map(particle_list.index, group)))
-    return molecules
-
-
 def get_bonds(compound):
     """
     Translates bond_graph.bond_edges to particle indices in compound
@@ -40,41 +18,6 @@ def get_bonds(compound):
     # This sorting is required for coarse-graining
     bonds.sort(key=lambda tup: (tup[0], tup[1]))
     return bonds
-
-
-def get_name_inds(compound, name):
-    """
-    Find indices of particles in compound where particle.name matches given name
-
-    Parameters
-    ----------
-    name : str, particle.name in mbuild.Compound
-
-    Returns
-    -------
-    list of particles indices which match name
-    """
-    return [i for i, p in enumerate(compound) if p.name == name]
-
-
-def tuple_to_names(compound, tup):
-    """
-    Get the names of particle indices passed in as a tuple.
-
-    Parameters
-    ----------
-    tup : tuple of ints, particle indices
-
-    Returns
-    -------
-    tuple of strings, particle.name of given indices
-    """
-    particles = [p for p in compound]
-
-    types = []
-    for index in tup:
-        types.append(particles[index].name)
-    return tuple(sorted(types))
 
 
 def get_bonded(compound, particle):
@@ -132,13 +75,6 @@ def remove_hydrogen(compound, particle):
     hydrogens = [i for i in get_bonded(compound, particle) if i.name == "H"]
     if hydrogens:
         compound.remove(hydrogens[0])
-
-
-def remove_hydrogens(compound):
-    """
-    Remove all particles with name = "H" in the compound
-    """
-    compound.remove([i for i in compound if i.name == "H"])
 
 
 def has_number(string):
