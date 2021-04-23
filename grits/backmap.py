@@ -87,8 +87,7 @@ def fg_bonds(cg_compound, bond_dict, anchors, fine_grained):
                 bondname = "".join(names[::-1])
                 bonds = [(j,i) for (i,j) in bond_dict[bondname]]
             except KeyError:
-                print(f"{bondname} not defined in bond dictionary.")
-                raise
+                raise KeyError(f"{bondname} not defined in bond dictionary.")
         # choose a starting distance that is way too big
         mindist = max(cg_compound.boundingbox.lengths)
         for fi,fj in bonds:
