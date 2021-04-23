@@ -9,5 +9,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - remove unnecessary functions to reduce dependencies
 - added basic unit tests
 - add setup.py for python packaging
+- added precommit to keep style in check
 
 ## Initial commit 2019-11-19
