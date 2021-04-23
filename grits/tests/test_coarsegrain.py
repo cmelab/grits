@@ -1,6 +1,6 @@
 import pytest
-
 from base_test import BaseTest
+
 from grits import CG_Compound
 
 
@@ -41,4 +41,3 @@ class Test_CGCompound(BaseTest):
 
         with pytest.warns(UserWarning):
             CG_Compound(p3ht, cg_beads)
-

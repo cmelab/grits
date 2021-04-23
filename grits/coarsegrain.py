@@ -1,45 +1,65 @@
+"""GRiTS: Coarse-graining tools."""
 import os
 import tempfile
 from warnings import warn
 
 import numpy as np
-from openbabel import pybel
-from mbuild.utils.io import run_from_ipython
 from mbuild import Compound, clone
+from mbuild.utils.io import run_from_ipython
+from openbabel import pybel
 
-from grits.utils import has_number, has_common_member, get_bonds
+from grits.utils import get_bonds, has_common_member, has_number
 
 
 class CG_Compound(Compound):
-    """
-    Creates a coarse-grained (CG) compound given a starting structure and
-    smart strings for desired beads.
+    """Coarse-grained Compound.
+
+    Wrapper for mbuild.Compound. Coarse-grained mapping can be specified using
+    SMARTS grammar.
 
     Parameters
     ----------
-    mol : pybel.Molecule
-    bead_list : list of tuples of strings, desired bead name
-    followed by SMARTS string of that bead
+    compound : mbuild.Compound
+        fine-grain structure to be coarse-grained
+    beads : list of tuples of strings
+        list of pairs containing desired bead name followed by SMARTS string
+        specification of that bead. For example:
+
+        >>> beads = [("_B", "c1sccc1"), ("_S", "CCC")]
+
+        would map a `"_B"` bead to any thiophene moiety (`"c1sccc1"`) found in
+        the compound and an `"_S"` bead to a propyl moiety (`"CCC"`).
 
     Attributes
     ----------
-    atomistic
-    bead_inds
+    atomistic: mbuild.Compound
+        the atomistic structure
+    bead_inds: list of (tuple of ints, string, string)
+        Each list item corresponds to the particle indices in that bead, the
+        smarts string used to find that bead, and the name of the bead.
+
+    Methods
+    -------
+    visualize(
+        show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
+        )
+        Visualize the CG_Compound in a Jupyter Notebook.
     """
-    def __init__(self, compound, bead_list):
+
+    def __init__(self, compound, beads):
         super(CG_Compound, self).__init__()
         self.atomistic = compound
 
         mol = compound.to_pybel()
         mol.OBMol.PerceiveBondOrders()
 
-        self.set_bead_inds(bead_list, mol)
-        self.cg_particles()
-        self.cg_bonds()
+        self._set_bead_inds(beads, mol)
+        self._cg_particles()
+        self._cg_bonds()
 
-    def set_bead_inds(self, bead_list, mol):
+    def _set_bead_inds(self, beads, mol):
         matches = []
-        for i, item in enumerate(bead_list):
+        for i, item in enumerate(beads):
             bead_name, smart_str = item
             smarts = pybel.Smarts(smart_str)
             if not smarts.findall(mol):
@@ -72,22 +92,16 @@ class CG_Compound(Compound):
             # TODO make this more informative
         self.bead_inds = bead_inds
 
-    def cg_particles(self):
-        """
-        given an mbuild compound and bead_inds(list of tup)
-        return coarse-grained mbuild compound
-        """
+    def _cg_particles(self):
+        """Set the beads in the coarse-structure."""
         for bead, smarts, bead_name in self.bead_inds:
             bead_xyz = self.atomistic.xyz[bead, :]
             avg_xyz = np.mean(bead_xyz, axis=0)
             bead = Bead(name=bead_name, pos=avg_xyz, smarts=smarts)
             self.add(bead)
 
-    def cg_bonds(self):
-        """
-        add bonds based on bonding in aa compound
-        return bonded mbuild compound
-        """
+    def _cg_bonds(self):
+        """Set the bonds in the coarse structure."""
         bonds = get_bonds(self.atomistic)
         bead_bonds = []
         for i, (bead_i, _, _) in enumerate(self.bead_inds[:-1]):
@@ -102,38 +116,37 @@ class CG_Compound(Compound):
             self.add_bond(bond_pair)
 
     def visualize(
-            self,
-            show_ports=False,
-            color_scheme={},
-            show_atomistic=False,
-            scale=1.0
-            ):  # pragma: no cover
-        """
-        Visualize the Compound using py3dmol.
+        self, show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
+    ):  # pragma: no cover
+        """Visualize the Compound using py3dmol.
+
         Allows for visualization of a Compound within a Jupyter Notebook.
         Modified to from mbuild.Compound.visualize to show atomistic elements
         (translucent) with larger CG beads.
 
         Parameters
         ----------
-        show_ports : bool, optional, default=False
+        show_ports : bool, default False
             Visualize Ports in addition to Particles
-        color_scheme : dict, optional
-            Specify coloring for non-elemental particles
-            keys are strings of the particle names
-            values are strings of the colors
-            i.e. {'_CGBEAD': 'blue'}
-        show_atomistic : bool
-            show the atomistic structure stored in CG_Compound.atomistic
+        color_scheme : dict, default {}
+            Specify coloring for non-elemental particles keys are strings of
+            the particle names values are strings of the colors:
+
+            >>> {'_CGBEAD': 'blue'}
+
+        show_atomistic : bool, default False
+            Show the atomistic structure stored in CG_Compound.atomistic
+        scale : float, default 1.0
+            Scaling factor to modify the size of objects in the view.
 
         Returns
-        ------
+        -------
         view : py3Dmol.view
         """
         if not run_from_ipython():
             raise RuntimeError(
-                'Visualization is only supported in Jupyter Notebooks.'
-                )
+                "Visualization is only supported in Jupyter Notebooks."
+            )
         import py3Dmol
 
         atom_names = []
@@ -144,7 +157,7 @@ class CG_Compound(Compound):
                 if not particle.name:
                     particle.name = "UNK"
                 else:
-                    if (particle.name != 'Compound') and (particle.name != 'CG_Compound'):
+                    if particle.name not in ("Compound", "CG_Compound"):
                         atom_names.append(particle.name)
 
         coarse = clone(self)
@@ -161,9 +174,8 @@ class CG_Compound(Compound):
             if not particle.name:
                 particle.name = "UNK"
             else:
-                if (particle.name != 'Compound') and (particle.name != 'CG_Compound'):
+                if particle.name not in ("Compound", "CG_Compound"):
                     cg_names.append(particle.name)
-
 
         tmp_dir = tempfile.mkdtemp()
 
@@ -187,7 +199,11 @@ class CG_Compound(Compound):
 
             view.setStyle(
                 {
-                    "stick": {"radius": 0.2 * scale, "opacity": opacity, "color": "grey"},
+                    "stick": {
+                        "radius": 0.2 * scale,
+                        "opacity": opacity,
+                        "color": "grey",
+                    },
                     "sphere": {
                         "scale": 0.3 * scale,
                         "opacity": opacity,
@@ -214,7 +230,11 @@ class CG_Compound(Compound):
             view.setStyle(
                 {"atom": cg_names},
                 {
-                    "stick": {"radius": 0.2 * scale, "opacity": 1, "color": "grey"},
+                    "stick": {
+                        "radius": 0.2 * scale,
+                        "opacity": 1,
+                        "color": "grey",
+                    },
                     "sphere": {
                         "scale": scale,
                         "opacity": 1,
@@ -229,7 +249,21 @@ class CG_Compound(Compound):
 
 
 class Bead(Compound):
+    """Coarse-grained Bead.
+
+    Wrapper for mbuild.Compound.
+
+    Parameters
+    ----------
+    smarts : str, default None
+        SMARTS string used to specify this Bead.
+
+    Attributes
+    ----------
+    smarts : str
+        SMARTS string used to specify this Bead.
+    """
+
     def __init__(self, smarts=None, **kwargs):
         self.smarts = smarts
         super(Bead, self).__init__(**kwargs)
-

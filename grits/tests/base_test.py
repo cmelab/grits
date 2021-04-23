@@ -1,10 +1,9 @@
 from os import path
-import pytest
 
 import mbuild as mb
+import pytest
 
 from grits import CG_Compound
-
 
 test_dir = path.dirname(__file__)
 
@@ -17,7 +16,7 @@ class BaseTest:
 
     @pytest.fixture
     def methane(self):
-        methane =  mb.load("C", smiles=True)
+        methane = mb.load("C", smiles=True)
         return methane
 
     @pytest.fixture

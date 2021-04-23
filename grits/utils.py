@@ -1,15 +1,20 @@
+"""Utility functions for GRiTS."""
 import re
 
 import numpy as np
 
 
 def get_bonds(compound):
-    """
-    Translates bond_graph.bond_edges to particle indices in compound
+    """Convert Particle instances in bond_graph.bond_edges to their indices.
+
+    Parameters
+    ----------
+    compound : mbuild.Compound or CG_Compound
+       Compound from which to get the indexed bond graph
 
     Returns
     -------
-    list of tuples of bonded atom indices sorted
+    sorted list of tuples of bonded particle indices
     """
     particle_list = [p for p in compound]
     bonds = []
@@ -21,39 +26,42 @@ def get_bonds(compound):
 
 
 def get_bonded(compound, particle):
-    """
-    Returns a list of particles bonded to the given particle
-    in a compound
+    """Get particles bonded to the given particle in a compound.
 
     Parameters
     ----------
-    compound : mbuild.Compound, compound containing particle
-    particle : mbuild.Particle, particle to which we want to
-               find the bonded neighbors.
+    compound : mbuild.Compound or CG_Compound
+        Compound containing particle
+    particle : mbuild.Particle or Bead
+        Particle to which the directly bonded neighbors are requested
 
     Returns
     -------
     list of mbuild.Particles
     """
-    def is_particle(i,j):
+
+    def is_particle(i, j):
         if i is particle:
             return j
         elif j is particle:
             return i
         else:
             return False
-    return [is_particle(i,j) for i,j in compound.bonds() if is_particle(i,j)]
+
+    return [is_particle(i, j) for i, j in compound.bonds() if is_particle(i, j)]
 
 
 def get_index(compound, particle):
-    """
-    Get the index of a particle in the compound so that the particle
-    can be accessed like compound[index]
+    """Get the index of a Particle in the Compound.
+
+    The particle can be accessed like compound[index].
 
     Parameters
     ----------
-    compound: mbuild.Compound, compound which contains particle
-    particle: mbuild.Particle, particle for which to fetch the index
+    compound: mbuild.Compound or CG_Compound
+        Compound which contains particle
+    particle: mbuild.Particle or Bead
+        Particle for which to fetch the index
 
     Returns
     -------
@@ -63,14 +71,17 @@ def get_index(compound, particle):
 
 
 def remove_hydrogen(compound, particle):
-    """
-    Remove a hydrogen attached to particle. Particle name must be "H".
-    If no hydrogen is bonded to particle, do nothing.
+    """Remove one hydrogen attached to particle.
+
+    Hydrogen particle name must be "H". If no hydrogen is bonded to particle,
+    this function will do nothing.
 
     Parameters
     ----------
-    compound: mbuild.Compound, compound which contains particle
-    particle: mbuild.Particle, particle from which to remove a hydrogen
+    compound: mbuild.Compound or CG_Compound
+        Compound which contains particle
+    particle: mbuild.Particle or Bead
+        Particle from which to remove a hydrogen
     """
     hydrogens = [i for i in get_bonded(compound, particle) if i.name == "H"]
     if hydrogens:
@@ -78,26 +89,57 @@ def remove_hydrogen(compound, particle):
 
 
 def has_number(string):
-    """
-    Returns True if string contains a number.
-    Else returns False.
+    """Determine whether a string contains a number.
+
+    Parameters
+    ----------
+    string: str
+        string which may contain a number
+
+    Returns
+    -------
+    bool
     """
     return bool(re.search("[0-9]", string))
 
 
-def has_common_member(set_a, tup):
+def has_common_member(it_a, it_b):
+    """Determine if two iterables share a common member.
+
+    Parameters
+    ----------
+    it_a, it_b: iterable objects
+        iterable objects to compare
+
+    Returns
+    -------
+    bool
     """
-    return True if set_a (set) and tup (tuple) share a common member
-    else return False
-    """
-    set_b = set(tup)
-    return set_a & set_b
+    return set(it_a) & set(it_b)
 
 
 def num2str(num):
-    """
-    Returns a capital letter for positive integers up to 701
-    e.g. num2str(0) = 'A'
+    """Convert a number to a string.
+
+    Convert positive integers up to 701 into a capital letter (or letters).
+
+    Parameters
+    ----------
+    num: int
+        number to convert
+
+    Examples
+    --------
+    >>> num2str(0)
+    'A'
+    >>> num2str(25)
+    'Z'
+    >>> num2str(25)
+    'AA'
+
+    Returns
+    -------
+    str
     """
     if num < 26:
         return chr(num + 65)
@@ -105,33 +147,37 @@ def num2str(num):
 
 
 def distance(pos1, pos2):
-    """
-    Calculates euclidean distance between two points.
+    """Calculate euclidean distance between two points.
 
     Parameters
     ----------
-    pos1, pos2 : ((3,) numpy.ndarray), xyz coordinates
-        (2D also works)
+    pos1, pos2 : numpy.ndarray,
+        x, y, and z coordinates (2D also works)
 
     Returns
     -------
-    float distance
+    float
     """
     return np.linalg.norm(pos1 - pos2)
 
 
-def v_distance(pos_array, pos2):
-    """
-    Calculates euclidean distances between all points in pos_array and pos2.
+def v_distance(pos1, pos2):
+    """Calculate euclidean distances between all points in pos1 and pos2.
 
     Parameters
     ----------
-    pos_array : ((N,3) numpy.ndarray), array of coordinates
-    pos2 : ((3,) numpy.ndarray), xyz coordinate
-        (2D also works)
+    pos1 : numpy.ndarray, shape=(N,3)
+        array of x, y, and z coordinates
+    pos2 : numpy.ndarray, shape=(3,)
+        x, y, and z coordinates
+
+    Notes
+    -----
+    `pos1` and `pos2` are interchangeable, but to correctly calculate the
+    distances only one of them can be a 2D array.
 
     Returns
     -------
-    (N,) numpy.ndarray of distances
+    (N,) numpy.ndarray
     """
-    return np.linalg.norm(pos_array - pos2, axis=1)
+    return np.linalg.norm(pos1 - pos2, axis=1)
