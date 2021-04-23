@@ -5,7 +5,7 @@ from mbuild import load, Particle, Compound
 from grits.utils import distance, get_index, remove_hydrogen
 
 
-def backmap(cg_compound, bead_dict, bond_dict):
+def backmap(cg_compound, bead_dict, bond_dict=None):
     """
     Creates a fine-grained compound from a coarse one given dictionaries
     specifying the bead and how to place bonds.
@@ -42,6 +42,16 @@ def backmap(cg_compound, bead_dict, bond_dict):
     -------
     mbuild.Compound
     """
+    fine_grained = fg_particles(cg_compound, bead_dict)
+
+    if bond_dict is None:
+        return fine_grained
+
+    fine_grained = fg_bonds(cg_compound, bond_dict, fine_grained)
+    return fine_grained
+
+
+def fg_particles(cg_compound, bead_dict):
     fine_grained = Compound()
 
     anchors = dict()
@@ -60,7 +70,10 @@ def backmap(cg_compound, bead_dict, bond_dict):
         except KeyError:
             pass
         fine_grained.add(b)
+    return fine_grained
 
+
+def fg_bonds(cg_compound, bond_dict, fine_grained):
     bonded_atoms = []
     for ibead,jbead in cg_compound.bonds():
         i = get_index(cg_compound, ibead)
@@ -99,5 +112,4 @@ def backmap(cg_compound, bead_dict, bond_dict):
 
     for atom in bonded_atoms:
         remove_hydrogen(fine_grained,atom)
-
     return fine_grained
