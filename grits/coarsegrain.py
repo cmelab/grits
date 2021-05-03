@@ -39,6 +39,8 @@ class CG_Compound(Compound):
         Mapping from atomistic to coarse-grain structure. Dictionary keys are
         a tuple of bead name and smart string, and the values correspond to the
         fine-grain particle indices.
+    anchors: dict
+        WIP
 
     Methods
     -------
@@ -51,6 +53,7 @@ class CG_Compound(Compound):
     def __init__(self, compound, beads):
         super(CG_Compound, self).__init__()
         self.atomistic = compound
+        self.anchors = None
 
         mol = compound.to_pybel()
         mol.OBMol.PerceiveBondOrders()
@@ -113,18 +116,32 @@ class CG_Compound(Compound):
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
         bonds = get_bonds(self.atomistic)
-        bead_bonds = []
-        bead_inds = [x for xs in self.mapping.values() for x in xs]
-        for i, bead_i in enumerate(bead_inds[:-1]):
-            for j, bead_j in enumerate(bead_inds[(i + 1) :]):
-                for pair in bonds:
-                    if (pair[0] in bead_i) and (pair[1] in bead_j):
-                        bead_bonds.append((i, j + i + 1))
-                    if (pair[1] in bead_i) and (pair[0] in bead_j):
-                        bead_bonds.append((i, j + i + 1))
-        for pair in bead_bonds:
-            bond_pair = [p for i, p in enumerate(self) if i in pair]
-            self.add_bond(bond_pair)
+        bead_inds = [
+            (name, group)
+            for (name, _), inds in self.mapping.items()
+            for group in inds
+        ]
+        anchors = defaultdict(set)
+        bond_map = defaultdict(set)
+        for i, (iname, igroup) in enumerate(bead_inds[:-1]):
+            for j, (jname, jgroup) in enumerate(bead_inds[(i + 1) :]):
+                for a, b in bonds:
+                    if a in igroup and b in jgroup:
+                        anchors[iname].add(igroup.index(a))
+                        anchors[jname].add(jgroup.index(b))
+                        bond_map[f"{iname}{jname}"].add(
+                            (igroup.index(a), jgroup.index(b))
+                        )
+                        self.add_bond([self[i], self[j + i + 1]])
+                    if b in igroup and a in jgroup:
+                        anchors[iname].add(igroup.index(b))
+                        anchors[jname].add(jgroup.index(a))
+                        bond_map[f"{iname}{jname}"].add(
+                            (igroup.index(b), jgroup.index(a))
+                        )
+                        self.add_bond([self[i], self[j + i + 1]])
+        self.anchors = anchors
+        self.bond_map = bond_map
 
     def visualize(
         self, show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
