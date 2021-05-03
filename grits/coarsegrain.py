@@ -1,6 +1,7 @@
 """GRiTS: Coarse-graining tools."""
 import os
 import tempfile
+from collections import defaultdict
 from warnings import warn
 
 import numpy as np
@@ -21,11 +22,11 @@ class CG_Compound(Compound):
     ----------
     compound : mbuild.Compound
         fine-grain structure to be coarse-grained
-    beads : list of tuples of strings
-        list of pairs containing desired bead name followed by SMARTS string
-        specification of that bead. For example:
+    beads : dict
+        Dictionary with keys containing desired bead name and values containing
+        SMARTS string specification of that bead. For example:
 
-        >>> beads = [("_B", "c1sccc1"), ("_S", "CCC")]
+            >>> beads = {"_B": "c1sccc1", "_S": "CCC"}
 
         would map a `"_B"` bead to any thiophene moiety (`"c1sccc1"`) found in
         the compound and an `"_S"` bead to a propyl moiety (`"CCC"`).
@@ -33,10 +34,11 @@ class CG_Compound(Compound):
     Attributes
     ----------
     atomistic: mbuild.Compound
-        the atomistic structure
-    bead_inds: list of (tuple of ints, string, string)
-        Each list item corresponds to the particle indices in that bead, the
-        smarts string used to find that bead, and the name of the bead.
+        The atomistic structure.
+    mapping: dict
+        Mapping from atomistic to coarse-grain structure. Dictionary keys are
+        a tuple of bead name and smart string, and the values correspond to the
+        fine-grain particle indices.
 
     Methods
     -------
@@ -53,14 +55,23 @@ class CG_Compound(Compound):
         mol = compound.to_pybel()
         mol.OBMol.PerceiveBondOrders()
 
-        self._set_bead_inds(beads, mol)
+        self._set_mapping(beads, mol)
         self._cg_particles()
         self._cg_bonds()
 
-    def _set_bead_inds(self, beads, mol):
+    def __repr__(self):
+        """Format the CG_Compound representation."""
+        return (
+            f"<{self.name}: {self.n_particles} beads "
+            + f"(from {self.atomistic.n_particles} atoms), "
+            + "pos=({:.4f},{: .4f},{: .4f}), ".format(*self.pos)
+            + f"{self.n_bonds:d} bonds>"
+        )
+
+    def _set_mapping(self, beads, mol):
+        """Set the mapping attribute."""
         matches = []
-        for i, item in enumerate(beads):
-            bead_name, smart_str = item
+        for bead_name, smart_str in beads.items():
             smarts = pybel.Smarts(smart_str)
             if not smarts.findall(mol):
                 warn(f"{smart_str} not found in compound!")
@@ -69,43 +80,43 @@ class CG_Compound(Compound):
                 matches.append((group, smart_str, bead_name))
 
         seen = set()
-        bead_inds = []
+        mapping = defaultdict(list)
         for group, smarts, name in matches:
             # smart strings for rings can share atoms
             # add bead regardless of whether it was seen
             if has_number(smarts):
-                for atom in group:
-                    seen.add(atom)
-                bead_inds.append((group, smarts, name))
+                seen.update(group)
+                mapping[(name, smarts)].append(group)
             # alkyl chains should be exclusive
             else:
                 if has_common_member(seen, group):
                     pass
                 else:
-                    for atom in group:
-                        seen.add(atom)
-                    bead_inds.append((group, smarts, name))
+                    seen.update(group)
+                    mapping[(name, smarts)].append(group)
 
         n_atoms = mol.OBMol.NumHvyAtoms()
         if n_atoms != len(seen):
             warn("Some atoms have been left out of coarse-graining!")
             # TODO make this more informative
-        self.bead_inds = bead_inds
+        self.mapping = mapping
 
     def _cg_particles(self):
         """Set the beads in the coarse-structure."""
-        for bead, smarts, bead_name in self.bead_inds:
-            bead_xyz = self.atomistic.xyz[bead, :]
-            avg_xyz = np.mean(bead_xyz, axis=0)
-            bead = Bead(name=bead_name, pos=avg_xyz, smarts=smarts)
-            self.add(bead)
+        for (name, smarts), inds in self.mapping.items():
+            for group in inds:
+                bead_xyz = self.atomistic.xyz[group, :]
+                avg_xyz = np.mean(bead_xyz, axis=0)
+                bead = Bead(name=name, pos=avg_xyz, smarts=smarts)
+                self.add(bead)
 
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
         bonds = get_bonds(self.atomistic)
         bead_bonds = []
-        for i, (bead_i, _, _) in enumerate(self.bead_inds[:-1]):
-            for j, (bead_j, _, _) in enumerate(self.bead_inds[(i + 1) :]):
+        bead_inds = [x for xs in self.mapping.values() for x in xs]
+        for i, bead_i in enumerate(bead_inds[:-1]):
+            for j, bead_j in enumerate(bead_inds[(i + 1) :]):
                 for pair in bonds:
                     if (pair[0] in bead_i) and (pair[1] in bead_j):
                         bead_bonds.append((i, j + i + 1))
@@ -266,4 +277,4 @@ class Bead(Compound):
 
     def __init__(self, smarts=None, **kwargs):
         self.smarts = smarts
-        super(Bead, self).__init__(**kwargs)
+        super(Bead, self).__init__(element=None, **kwargs)
