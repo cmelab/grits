@@ -54,6 +54,7 @@ class CG_Compound(Compound):
         super(CG_Compound, self).__init__()
         self.atomistic = compound
         self.anchors = None
+        self.bond_map = None
 
         mol = compound.to_pybel()
         mol.OBMol.PerceiveBondOrders()
@@ -122,23 +123,41 @@ class CG_Compound(Compound):
             for group in inds
         ]
         anchors = defaultdict(set)
-        bond_map = defaultdict(set)
+        bond_map = []
         for i, (iname, igroup) in enumerate(bead_inds[:-1]):
             for j, (jname, jgroup) in enumerate(bead_inds[(i + 1) :]):
                 for a, b in bonds:
                     if a in igroup and b in jgroup:
                         anchors[iname].add(igroup.index(a))
                         anchors[jname].add(jgroup.index(b))
-                        bond_map[f"{iname}{jname}"].add(
-                            (igroup.index(a), jgroup.index(b))
+                        # If the bond is between two beads of the same type,
+                        # add it to the end
+                        bondinfo = (
+                            f"{iname}-{jname}",
+                            (igroup.index(a), jgroup.index(b)),
                         )
+                        if bondinfo not in bond_map:
+                            if iname == jname:
+                                bond_map.append(bondinfo)
+                            else:
+                                # Otherwise add it to the beginning
+                                bond_map.insert(0, bondinfo)
+
                         self.add_bond([self[i], self[j + i + 1]])
+
                     if b in igroup and a in jgroup:
                         anchors[iname].add(igroup.index(b))
                         anchors[jname].add(jgroup.index(a))
-                        bond_map[f"{iname}{jname}"].add(
-                            (igroup.index(b), jgroup.index(a))
+                        bondinfo = (
+                            f"{iname}-{jname}",
+                            (igroup.index(b), jgroup.index(a)),
                         )
+                        if bondinfo not in bond_map:
+                            if iname == jname:
+                                bond_map.append(bondinfo)
+                            else:
+                                # Otherwise add it to the beginning
+                                bond_map.insert(0, bondinfo)
                         self.add_bond([self[i], self[j + i + 1]])
         self.anchors = anchors
         self.bond_map = bond_map
