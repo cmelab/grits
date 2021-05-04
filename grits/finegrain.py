@@ -45,44 +45,26 @@ def backmap(cg_compound):
             for ibead, jbead in cg_compound.bonds():
                 names = [ibead.name, jbead.name]
                 if "-".join(names) == name:
-                    xinds = inds
+                    fi, fj = inds
                 elif "-".join(names[::-1]) == name:
-                    xinds = inds[::-1]
+                    fj, fi = inds
                 else:
                     continue
 
-                # if the bonds is between two same type beads, we can try
-                # bonding to other anchor sites.
-                if ibead.name == jbead.name:
-                    print("same")
-                    # We'll choose based on distance
-                    # start with a crazy big distance, so at least ONE pair
-                    # will be better than it.
-                    mindist = max(cg_compound.boundingbox.lengths)
-                    for fi, fj in it.product(xinds, repeat=2):
-                        print("\tnew: ", fi, fj)
-                        iatom = anchors[i][fi]
-                        jatom = anchors[j][fj]
-                        if any(x in bonded_atoms for x in [iatom, jatom]):
-                            # assume only one bond from the CG translates
-                            # to the FG structure
-                            print("\tskipping: ", fi, fj)
-                            continue
-                        dist = distance(iatom.pos, jatom.pos)
-                        if dist < mindist:
-                            print("\tnew best: ", fi, fj)
-                            fi_best = fi
-                            fj_best = fj
-                            mindist = dist
-                        print("\t\tbest: ", fi_best, fj_best)
-                    print("final: ", fi_best, fj_best)
-                else:
-                    fi_best, fj_best = xinds
-
                 i = get_index(cg_compound, ibead)
                 j = get_index(cg_compound, jbead)
-                iatom = anchors[i][fi_best]
-                jatom = anchors[j][fj_best]
+                try:
+                    iatom = anchors[i].pop(fi)
+                except KeyError:
+                    iatom = anchors[i].pop(
+                        [x for x in inds if x in anchors[i]][0]
+                    )
+                try:
+                    jatom = anchors[j].pop(fj)
+                except KeyError:
+                    jatom = anchors[j].pop(
+                        [x for x in inds if x in anchors[j]][0]
+                    )
 
                 fine_grained.add_bond((iatom, jatom))
 
@@ -98,4 +80,4 @@ def backmap(cg_compound):
         return fine_grained
 
     fine_grained = fg_bonds()
-    return fine_grained
+    return fine_grained, anchors
