@@ -1,4 +1,5 @@
 """GRiTS: Fine-graining tools."""
+import itertools as it
 from collections import defaultdict
 
 from mbuild import Compound, Particle, load
@@ -44,25 +45,49 @@ def backmap(cg_compound):
             for ibead, jbead in cg_compound.bonds():
                 names = [ibead.name, jbead.name]
                 if "-".join(names) == name:
-                    pass
+                    xinds = inds
                 elif "-".join(names[::-1]) == name:
-                    inds = inds[::-1]
-                    print(inds)
+                    xinds = inds[::-1]
                 else:
                     continue
 
+                # if the bonds is between two same type beads, we can try
+                # bonding to other anchor sites.
+                if ibead.name == jbead.name:
+                    print("same")
+                    # We'll choose based on distance
+                    # start with a crazy big distance, so at least ONE pair
+                    # will be better than it.
+                    mindist = max(cg_compound.boundingbox.lengths)
+                    for fi, fj in it.product(xinds, repeat=2):
+                        print("\tnew: ", fi, fj)
+                        iatom = anchors[i][fi]
+                        jatom = anchors[j][fj]
+                        if any(x in bonded_atoms for x in [iatom, jatom]):
+                            # assume only one bond from the CG translates
+                            # to the FG structure
+                            print("\tskipping: ", fi, fj)
+                            continue
+                        dist = distance(iatom.pos, jatom.pos)
+                        if dist < mindist:
+                            print("\tnew best: ", fi, fj)
+                            fi_best = fi
+                            fj_best = fj
+                            mindist = dist
+                        print("\t\tbest: ", fi_best, fj_best)
+                    fi, fj = fi_best, fj_best
+                    print("final: ", fi, fi)
+                else:
+                    fi, fj = xinds
+
                 i = get_index(cg_compound, ibead)
                 j = get_index(cg_compound, jbead)
-                print(name, inds)
-                iatom = anchors[i][inds[0]]
-                jatom = anchors[j][inds[1]]
+                iatom = anchors[i][fi]
+                jatom = anchors[j][fj]
 
-                if any(x in bonded_atoms for x in [iatom, jatom]):
-                    continue
                 fine_grained.add_bond((iatom, jatom))
 
-                bonded_atoms.append(iatom)
-                bonded_atoms.append(jatom)
+                bonded_atoms += (iatom, jatom)
 
         for atom in bonded_atoms:
             remove_hydrogen(fine_grained, atom)
