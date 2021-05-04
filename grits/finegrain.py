@@ -42,8 +42,6 @@ def backmap(cg_compound):
         """Set the bonds for the fine-grained structure."""
         bonded_atoms = []
         remove_hs = []
-        # The commented out bits are for two align steps
-        # rotated = {k: [False, False] for k in anchors.keys()}
         rotated = {k: False for k in anchors.keys()}
         for name, inds in cg_compound.bond_map:
             for ibead, jbead in cg_compound.bonds():
@@ -70,26 +68,15 @@ def backmap(cg_compound):
 
                 hi = get_hydrogen(fine_grained, iatom)
                 hj = get_hydrogen(fine_grained, jatom)
-                # each part can be rotated twice
-                # first arbitrarily and second along the first rotation axis
-                # if rotated[i][0] is False:
+                # each part can be rotated
                 if not rotated[i]:
                     # rotate
                     align(fine_grained[str(i)], hi, jbead)
                     rotated[i] = True
-                # elif not rotated[i][1]:
-                #    print(i, " rotate twice")
-                #    align(fine_grained[str(i)], hi, jbead, around=rotated[i][0])
-                #    rotated[i][1] = True
                 if not rotated[j]:
                     # rotate
-                    # rotated[j][0] = align(fine_grained[str(j)], hj, ibead)
                     align(fine_grained[str(j)], hj, ibead)
                     rotated[j] = True
-                # elif not rotated[j][1]:
-                #    print(j, " rotate once")
-                #    align(fine_grained[str(j)], hj, ibead, around=rotated[j][0])
-                #    rotated[j][1] = True
 
                 fine_grained.add_bond((iatom, jatom))
 
