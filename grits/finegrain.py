@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from mbuild import Compound, Particle, load
 
-from grits.utils import distance, get_index, remove_hydrogen
+from grits.utils import align, distance, get_hydrogen, get_index
 
 
 def backmap(cg_compound):
@@ -41,7 +41,8 @@ def backmap(cg_compound):
     def fg_bonds():
         """Set the bonds for the fine-grained structure."""
         bonded_atoms = []
-        rotated = {k: False for k in anchors.keys()}
+        remove_hs = []
+        rotated = {k: [False, False] for k in anchors.keys()}
         for name, inds in cg_compound.bond_map:
             for ibead, jbead in cg_compound.bonds():
                 names = [ibead.name, jbead.name]
@@ -65,19 +66,32 @@ def backmap(cg_compound):
                     fj = [x for x in inds if x in anchors[j]][0]
                     jatom = anchors[j].pop(fj)
 
-                if not rotated[i]:
+                hi = get_hydrogen(fine_grained, iatom)
+                hj = get_hydrogen(fine_grained, jatom)
+                # each part can be rotated twice
+                # first arbitrarily and second along the first rotation axis
+                if rotated[i][0] is False:
                     # rotate
-                    rotated[i] = True
-                if not rotated[j]:
+                    rotated[i][0] = align(fine_grained[str(i)], hi, jbead)
+                # elif not rotated[i][1]:
+                #    print(i, " rotate twice")
+                #    align(fine_grained[str(i)], hi, jbead, around=rotated[i][0])
+                #    rotated[i][1] = True
+                if rotated[j][0] is False:
                     # rotate
-                    rotated[j] = True
+                    rotated[j][0] = align(fine_grained[str(j)], hj, ibead)
+                # elif not rotated[j][1]:
+                #    print(j, " rotate once")
+                #    align(fine_grained[str(j)], hj, ibead, around=rotated[j][0])
+                #    rotated[j][1] = True
 
                 fine_grained.add_bond((iatom, jatom))
 
                 bonded_atoms += (iatom, jatom)
+                remove_hs += (hi, hj)
 
-        for atom in bonded_atoms:
-            remove_hydrogen(fine_grained, atom)
+        for atom in remove_hs:
+            fine_grained.remove(atom)
         return fine_grained
 
     fine_grained, anchors = fg_particles()
@@ -86,4 +100,4 @@ def backmap(cg_compound):
         return fine_grained
 
     fine_grained = fg_bonds()
-    return fine_grained, anchors
+    return fine_grained
