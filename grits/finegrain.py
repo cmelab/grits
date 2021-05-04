@@ -75,15 +75,14 @@ def backmap(cg_compound):
                             fj_best = fj
                             mindist = dist
                         print("\t\tbest: ", fi_best, fj_best)
-                    fi, fj = fi_best, fj_best
-                    print("final: ", fi, fi)
+                    print("final: ", fi_best, fj_best)
                 else:
-                    fi, fj = xinds
+                    fi_best, fj_best = xinds
 
                 i = get_index(cg_compound, ibead)
                 j = get_index(cg_compound, jbead)
-                iatom = anchors[i][fi]
-                jatom = anchors[j][fj]
+                iatom = anchors[i][fi_best]
+                jatom = anchors[j][fj_best]
 
                 fine_grained.add_bond((iatom, jatom))
 
