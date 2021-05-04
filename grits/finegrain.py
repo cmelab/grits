@@ -35,12 +35,13 @@ def backmap(cg_compound):
             anchors[i] = dict()
             for index in cg_compound.anchors[bead.name]:
                 anchors[i][index] = b[index]
-            fine_grained.add(b)
+            fine_grained.add(b, str(i))
         return fine_grained, anchors
 
     def fg_bonds():
         """Set the bonds for the fine-grained structure."""
         bonded_atoms = []
+        rotated = {k: False for k in anchors.keys()}
         for name, inds in cg_compound.bond_map:
             for ibead, jbead in cg_compound.bonds():
                 names = [ibead.name, jbead.name]
@@ -56,15 +57,20 @@ def backmap(cg_compound):
                 try:
                     iatom = anchors[i].pop(fi)
                 except KeyError:
-                    iatom = anchors[i].pop(
-                        [x for x in inds if x in anchors[i]][0]
-                    )
+                    fi = [x for x in inds if x in anchors[i]][0]
+                    iatom = anchors[i].pop(fi)
                 try:
                     jatom = anchors[j].pop(fj)
                 except KeyError:
-                    jatom = anchors[j].pop(
-                        [x for x in inds if x in anchors[j]][0]
-                    )
+                    fj = [x for x in inds if x in anchors[j]][0]
+                    jatom = anchors[j].pop(fj)
+
+                if not rotated[i]:
+                    # rotate
+                    rotated[i] = True
+                if not rotated[j]:
+                    # rotate
+                    rotated[j] = True
 
                 fine_grained.add_bond((iatom, jatom))
 
