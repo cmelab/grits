@@ -2,7 +2,7 @@
 import os
 import tempfile
 from collections import defaultdict
-from warnings import warn
+from warnings import catch_warnings, simplefilter, warn
 
 import numpy as np
 from mbuild import Compound, clone
@@ -261,11 +261,14 @@ class CG_Compound(Compound):
 
         # coarse
         if cg_names:
-            coarse.save(
-                os.path.join(tmp_dir, "coarse_tmp.mol2"),
-                show_ports=show_ports,
-                overwrite=True,
-            )
+            # silence warning about No element found for CG bead
+            with catch_warnings():
+                simplefilter("ignore")
+                coarse.save(
+                    os.path.join(tmp_dir, "coarse_tmp.mol2"),
+                    show_ports=show_ports,
+                    overwrite=True,
+                )
             with open(os.path.join(tmp_dir, "coarse_tmp.mol2"), "r") as f:
                 view.addModel(f.read(), "mol2", keepH=True)
 
