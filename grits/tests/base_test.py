@@ -32,3 +32,13 @@ class BaseTest:
 
         cg_p3ht = CG_Compound(p3ht, cg_beads)
         return cg_p3ht
+
+    @pytest.fixture
+    def alkane(self):
+        chain = mb.load("CCC" * 4, smiles=True)
+        return chain
+
+    @pytest.fixture
+    def cg_alkane(self, alkane):
+        cg_chain = CG_Compound(alkane, {"_A": "CCC"})
+        return cg_chain

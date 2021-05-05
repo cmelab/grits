@@ -19,9 +19,8 @@ class Test_Backmap(BaseTest):
         assert fg_p3ht.n_particles == p3ht.n_particles
         assert fg_p3ht.n_bonds == p3ht.n_bonds
 
-    def test_alkane_chain(self):
-        chain = mb.load("CCC" * 4, smiles=True)
-        cg_chain = grits.CG_Compound(chain, {"_A", "CCC"})
-        fg_chain = backmap(cg_chain)
-        assert fg_chain.n_bonds == chain.n_bonds
-        assert fg_chain.n_particles == chain.n_particles
+    def test_alkane(self, alkane, cg_alkane):
+        fg_alkane = backmap(cg_alkane)
+
+        assert fg_alkane.n_bonds == alkane.n_bonds
+        assert fg_alkane.n_particles == alkane.n_particles
