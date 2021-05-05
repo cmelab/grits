@@ -21,26 +21,37 @@ class CG_Compound(Compound):
     Parameters
     ----------
     compound : mbuild.Compound
-        fine-grain structure to be coarse-grained
+        Fine-grain structure to be coarse-grained
     beads : dict
         Dictionary with keys containing desired bead name and values containing
-        SMARTS string specification of that bead. For example:
+        SMARTS string specification of that bead. For example::
 
-            >>> beads = {"_B": "c1sccc1", "_S": "CCC"}
+            beads = {"_B": "c1sccc1", "_S": "CCC"}
 
         would map a `"_B"` bead to any thiophene moiety (`"c1sccc1"`) found in
         the compound and an `"_S"` bead to a propyl moiety (`"CCC"`).
 
     Attributes
     ----------
-    atomistic: mbuild.Compound
+    atomistic: mbuild.Compound,
         The atomistic structure.
-    mapping: dict
-        Mapping from atomistic to coarse-grain structure. Dictionary keys are
-        a tuple of bead name and smart string, and the values correspond to the
-        fine-grain particle indices.
-    anchors: dict
-        WIP
+    mapping: dict,
+        A mapping from atomistic to coarse-grain structure. Dictionary keys are
+        a tuple of bead name and smart string, and the values are a list of
+        tuples of fine-grain particle indices for each bead instance::
+
+            {('_B', 'c1sccc1'): [(0, 4, 3, 2, 1), ...], ...}
+
+    anchors: dict,
+        A mapping of the anchor particle indices in each bead. Dictionary keys
+        are the bead name and the values are a set of indices::
+
+            {"_B": {0, 2, 3}, ...}
+
+    bond_map: list of tuples,
+        A list of the bond types and the anchors to use for that bond::
+
+            [('_B-_S', (3, 0)), ...]
 
     Methods
     -------
