@@ -117,24 +117,6 @@ def get_index(compound, particle):
     return [p for p in compound].index(particle)
 
 
-def remove_hydrogen(compound, particle):
-    """Remove the first hydrogen attached to particle.
-
-    Hydrogen particle name must be "H". If no hydrogen is bonded to particle,
-    this function will do nothing.
-
-    Parameters
-    ----------
-    compound: mbuild.Compound or CG_Compound
-        Compound which contains particle
-    particle: mbuild.Particle or Bead
-        Particle from which to remove a hydrogen
-    """
-    hydrogen = get_hydrogen(compound, particle)
-    if hydrogen is not None:
-        compound.remove(hydrogen)
-
-
 def get_hydrogen(compound, particle):
     """Get the first hydrogen attached to particle.
 
