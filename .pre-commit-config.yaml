@@ -19,5 +19,5 @@ repos:
   rev: '6.0.0'
   hooks:
     - id: pydocstyle
-      exclude: ^(grits/tests/|grits/compounds/|setup.py)
+      exclude: ^(grits/tests/|grits/compounds/|setup.py|docs/)
       args: [--convention=numpy]
