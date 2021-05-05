@@ -41,3 +41,7 @@ class Test_CGCompound(BaseTest):
 
         with pytest.warns(UserWarning):
             CG_Compound(p3ht, cg_beads)
+
+    def test_reprnoerror(self, cg_methane, cg_p3ht):
+        str(cg_p3ht)
+        str(cg_methane)
