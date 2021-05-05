@@ -10,13 +10,13 @@ from grits.utils import align, distance, get_hydrogen, get_index
 def backmap(cg_compound):
     """Backmap a fine-grained representation onto a coarse one.
 
-    Creates a fine-grained compound from a coarse one given dictionaries
-    specifying the bead and how to place bonds.
+    Creates a fine-grained compound from a coarse one using the attributes
+    created during CG_Compound initialization.
 
     Parameters
     ----------
     cg_compound: CG_Compound
-        coarse-grained compound
+        Coarse-grained compound
 
     Returns
     -------
