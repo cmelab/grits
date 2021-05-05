@@ -23,7 +23,7 @@ AUTHOR = "Jenny Fothergill"
 REQUIRES_PYTHON = ">=3.7.0"
 
 # What packages are required for this module to be executed?
-REQUIRED = ["ele", "foyer", "gsd", "mbuild", "numpy"]
+REQUIRED = ["mbuild", "numpy", "openbabel", "rdkit"]
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
