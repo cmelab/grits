@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from mbuild import Compound, Particle, load
 
-from grits.utils import align, distance, get_hydrogen, get_index
+from grits.utils import align, get_hydrogen, get_index
 
 
 def backmap(cg_compound):
