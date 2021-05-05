@@ -141,35 +141,31 @@ class CG_Compound(Compound):
                     if a in igroup and b in jgroup:
                         anchors[iname].add(igroup.index(a))
                         anchors[jname].add(jgroup.index(b))
-                        # If the bond is between two beads of the same type,
-                        # add it to the end
                         bondinfo = (
                             f"{iname}-{jname}",
                             (igroup.index(a), jgroup.index(b)),
                         )
-                        if bondinfo not in bond_map:
-                            if iname == jname:
-                                bond_map.append(bondinfo)
-                            else:
-                                # Otherwise add it to the beginning
-                                bond_map.insert(0, bondinfo)
 
-                        self.add_bond([self[i], self[j + i + 1]])
-
-                    if b in igroup and a in jgroup:
+                    elif b in igroup and a in jgroup:
                         anchors[iname].add(igroup.index(b))
                         anchors[jname].add(jgroup.index(a))
                         bondinfo = (
                             f"{iname}-{jname}",
                             (igroup.index(b), jgroup.index(a)),
                         )
-                        if bondinfo not in bond_map:
-                            if iname == jname:
-                                bond_map.append(bondinfo)
-                            else:
-                                # Otherwise add it to the beginning
-                                bond_map.insert(0, bondinfo)
-                        self.add_bond([self[i], self[j + i + 1]])
+                    else:
+                        continue
+                    if bondinfo not in bond_map:
+                        # If the bond is between two beads of the same type,
+                        # add it to the end
+                        if iname == jname:
+                            bond_map.append(bondinfo)
+                        # Otherwise add it to the beginning
+                        else:
+                            bond_map.insert(0, bondinfo)
+
+                    self.add_bond([self[i], self[j + i + 1]])
+
         self.anchors = anchors
         self.bond_map = bond_map
 
