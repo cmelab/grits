@@ -17,8 +17,7 @@ import sys
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-sys.path.insert(0, os.path.abspath("../.."))
-# sys.path.insert(0, os.path.abspath('sphinxext'))
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
@@ -27,10 +26,9 @@ project = "grits"
 copyright = "2021, Boise State University"
 author = "CME Lab"
 
-import grits
 
 # The full version, including alpha/beta/rc tags
-release = grits.__version__
+release = "0.0.1"
 
 
 # -- General configuration ---------------------------------------------------
