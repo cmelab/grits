@@ -22,13 +22,7 @@ A toolkit for working with coarse-grain systems.
 
 .. toctree::
    :maxdepth: 1
+   :titlesonly:
    :caption: Reference
 
    license
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

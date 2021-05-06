@@ -45,6 +45,8 @@ extensions = [
     "sphinx.ext.napoleon",
 ]
 
+autosummary_generate = True
+
 intersphinx_mapping = {
     "python": ("http://docs.python.org/3.7", None),
     "numpy": ("https://numpy.org/doc/stable/reference/", None),

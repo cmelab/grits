@@ -7,9 +7,15 @@ Coarsegrain Module
 .. autosummary::
     :nosignatures:
 
-    grits.coarsegrain
+    grits.coarsegrain.CG_Compound
+    grits.coarsegrain.Bead
 
 .. rubric:: Details
 
-.. automodule:: grits.coarsegrain
+.. autoclass:: grits.coarsegrain.CG_Compound
     :members:
+    :show-inheritance:
+
+.. autoclass:: grits.coarsegrain.Bead
+    :members:
+    :show-inheritance:
