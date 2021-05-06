@@ -12,5 +12,4 @@ Finegrain Module
 .. rubric:: Details
 
 .. automodule:: grits.finegrain
-    :synopsis: Restores fine-grain structure from coarse-grained representation.
     :members:

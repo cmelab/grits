@@ -20,25 +20,15 @@ import mock
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-MOCK_MODULES = [
-    "mbuild" "numpy",
-]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
-
-
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("../.."))
 # sys.path.insert(0, os.path.abspath('sphinxext'))
-
-base_path = pathlib.Path(__file__).parent
-os.system("python {} --name".format((base_path / "../setup.py").resolve()))
 
 
 # -- Project information -----------------------------------------------------
 
 project = "grits"
 copyright = "2021, Boise State University"
-author = "Jenny Fothergill"
+author = "CME Lab"
 
 # The full version, including alpha/beta/rc tags
 release = "0.0.1"
@@ -50,18 +40,10 @@ release = "0.0.1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "numpydoc",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
 ]
-
-autosummary_generate = True
-autodoc_default_flags = ["members"]
-numpydoc_class_members_toctree = False
-
-# stackoverflow.com/questions/12206334
-numpydoc_show_class_members = False
-numpydoc_show_inherited_class_members = False
 
 intersphinx_mapping = {
     "python": ("http://docs.python.org/3.7", None),

@@ -11,12 +11,5 @@ Coarsegrain Module
 
 .. rubric:: Details
 
-.. currentmodule:: grits.coarsegrain
-
-.. autoclass:: CG_Compound
+.. automodule:: grits.coarsegrain
     :members:
-    :show-inheritance:
-
-.. autoclass:: Bead
-    :members:
-    :show-inheritance:
