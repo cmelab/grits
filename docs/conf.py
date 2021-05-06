@@ -40,7 +40,8 @@ release = "0.0.1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "numpydoc" "sphinx.ext.autodoc",
+    "numpydoc",
+    "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
 ]
 
