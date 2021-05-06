@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import pathlib
 import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -19,6 +20,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
+base_path = pathlib.Path(__file__).parent
+os.system("python {} --name".format((base_path / "../setup.py").resolve()))
 
 # -- Project information -----------------------------------------------------
 
@@ -37,12 +40,17 @@ release = "0.0.1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.autodoc",
+    "numpydoc" "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinx.ext.napoleon",
 ]
 
 autosummary_generate = True
+autodoc_default_flags = ["members"]
+numpydoc_class_members_toctree = False
+
+# stackoverflow.com/questions/12206334
+numpydoc_show_class_members = False
+numpydoc_show_inherited_class_members = False
 
 intersphinx_mapping = {
     "python": ("http://docs.python.org/3.7", None),
