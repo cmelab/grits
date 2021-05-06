@@ -7,8 +7,7 @@ Coarsegrain Module
 .. autosummary::
     :nosignatures:
 
-    grits.coarsegrain.CG_Compound
-    grits.coarsegrain.Bead
+    grits.coarsegrain
 
 .. rubric:: Details
 

@@ -1,4 +1,6 @@
 """GRiTS: Fine-graining tools."""
+__all__ = ["backmap"]
+
 from collections import defaultdict
 
 from mbuild import Compound, Particle, load

@@ -7,7 +7,7 @@ Finegrain Module
 .. autosummary::
     :nosignatures:
 
-    grits.finegrain.backmap
+    grits.finegrain
 
 .. rubric:: Details
 

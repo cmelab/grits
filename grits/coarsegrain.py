@@ -1,4 +1,6 @@
 """GRiTS: Coarse-graining tools."""
+__all__ = ["CG_Compound", "Bead"]
+
 import os
 import tempfile
 from warnings import warn
