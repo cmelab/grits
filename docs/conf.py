@@ -11,10 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import pathlib
 import sys
-
-import mock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -30,8 +27,10 @@ project = "grits"
 copyright = "2021, Boise State University"
 author = "CME Lab"
 
+import grits
+
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = grits.__version__
 
 
 # -- General configuration ---------------------------------------------------
