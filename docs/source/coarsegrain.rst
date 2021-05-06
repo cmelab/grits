@@ -7,10 +7,17 @@ Coarsegrain Module
 .. autosummary::
     :nosignatures:
 
-    grits.coarsegrain
+    grits.coarsegrain.CG_Compound
+    grits.coarsegrain.Bead
 
 .. rubric:: Details
 
-.. automodule:: grits.coarsegrain
-    :synopsis: Creates coarse-grain model given atomistic structure and mapping.
+.. currentmodule:: grits.coarsegrain
+
+.. autoclass:: CG_Compound
     :members:
+    :show-inheritance:
+
+.. autoclass:: Bead
+    :members:
+    :show-inheritance:
