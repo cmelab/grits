@@ -10,15 +10,34 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import pathlib
+import sys
+
+import mock
+
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+
+MOCK_MODULES = [
+    "mbuild" "numpy",
+]
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
+
+
+sys.path.insert(0, os.path.abspath(".."))
+# sys.path.insert(0, os.path.abspath('sphinxext'))
+
+base_path = pathlib.Path(__file__).parent
+os.system("python {} --name".format((base_path / "../setup.py").resolve()))
 
 
 # -- Project information -----------------------------------------------------
 
 project = "grits"
-copyright = "2021, Jenny Fothergill"
+copyright = "2021, Boise State University"
 author = "Jenny Fothergill"
 
 # The full version, including alpha/beta/rc tags
@@ -31,10 +50,24 @@ release = "0.0.1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "numpydoc",
     "sphinx.ext.autodoc",
-    "sphinx.ext.napoleon",
     "sphinx.ext.autosummary",
 ]
+
+autosummary_generate = True
+autodoc_default_flags = ["members"]
+numpydoc_class_members_toctree = False
+
+# stackoverflow.com/questions/12206334
+numpydoc_show_class_members = False
+numpydoc_show_inherited_class_members = False
+
+intersphinx_mapping = {
+    "python": ("http://docs.python.org/3.7", None),
+    "numpy": ("https://numpy.org/doc/stable/reference/", None),
+    "mbuild": ("https://mbuild.mosdef.org/en/stable/", None),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -44,6 +77,10 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = "sphinx"
+
+# The master toctree document.
 master_doc = "index"
 
 # -- Options for HTML output -------------------------------------------------
@@ -51,7 +88,10 @@ master_doc = "index"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+import sphinx_rtd_theme
+
+html_theme = "sphinx_rtd_theme"
+hhtml_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
