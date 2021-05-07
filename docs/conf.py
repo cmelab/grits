@@ -6,12 +6,18 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import os
+import sys
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
+import mock
+
+MOCK = ["mbuild"]
+for mod in MOCK:
+    sys.modules[mod] = mock.Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
