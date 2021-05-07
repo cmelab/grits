@@ -5,16 +5,19 @@ import numpy as np
 
 
 def get_bonds(compound):
-    """Convert Particle instances in bond_graph.bond_edges to their indices.
+    """Convert Particle instances in bond_graph.edges to their indices.
+
+    See :py:meth:`CG_Compound.bond_graph.edges`.
 
     Parameters
     ----------
-    compound : mbuild.Compound or CG_Compound
-       Compound from which to get the indexed bond graph
+    compound : :py:class:`mbuild.Compound` or CG_Compound
+       Compound from which to get the indexed bond graph.
 
     Returns
     -------
-    sorted list of tuples of bonded particle indices
+    list of tuple of int
+        sorted list of bonded particle indices
     """
     particle_list = [p for p in compound]
     bonds = []
@@ -30,14 +33,14 @@ def get_bonded(compound, particle):
 
     Parameters
     ----------
-    compound : mbuild.Compound or CG_Compound
+    compound : :py:class:`mbuild.Compound` or CG_Compound
         Compound containing particle
-    particle : mbuild.Particle or Bead
+    particle : :py:class:`mbuild.Particle` or Bead
         Particle to which the directly bonded neighbors are requested
 
     Returns
     -------
-    list of mbuild.Particles
+    list of :py:class:`mbuild.Particle`
     """
 
     def is_particle(i, j):
@@ -66,6 +69,7 @@ def get_index(compound, particle):
     Returns
     -------
     int
+        The particle index
     """
     return [p for p in compound].index(particle)
 
@@ -94,7 +98,7 @@ def has_number(string):
     Parameters
     ----------
     string: str
-        string which may contain a number
+        String which may contain a number
 
     Returns
     -------
@@ -108,7 +112,7 @@ def has_common_member(it_a, it_b):
 
     Parameters
     ----------
-    it_a, it_b: iterable objects
+    it_a, it_b: iterable
         iterable objects to compare
 
     Returns
@@ -125,8 +129,8 @@ def num2str(num):
 
     Parameters
     ----------
-    num: int
-        number to convert
+    num : int
+        Number to convert
 
     Examples
     --------
@@ -140,6 +144,7 @@ def num2str(num):
     Returns
     -------
     str
+        The string conversion of the number
     """
     if num < 26:
         return chr(num + 65)
@@ -173,7 +178,7 @@ def v_distance(pos1, pos2):
 
     Notes
     -----
-    `pos1` and `pos2` are interchangeable, but to correctly calculate the
+    ``pos1`` and ``pos2`` are interchangeable, but to correctly calculate the
     distances only one of them can be a 2D array.
 
     Returns

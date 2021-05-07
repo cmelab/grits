@@ -17,38 +17,38 @@ def backmap(cg_compound, bead_dict, bond_dict=None):
     Parameters
     ----------
     cg_compound: CG_Compound
-        coarse-grained compound
-    bead_dict: dictionary of dictionaries
-        specifies what SMILES string and bond anchors to use for each bead type.
-        For example:
+        Coarse-grained compound
+    bead_dict: dict of dict
+        Specifies what SMILES string and bond anchors to use for each bead type.
+        For example::
 
-        >>> bead_dict = {
-        >>>     "_B": {
-        >>>         "smiles": "c1sccc1",
-        >>>         "anchors": [0,2,4],
-        >>>         "posres": 1
-        >>>         },
-        >>>     }
+            bead_dict = {
+                "_B": {
+                    "smiles": "c1sccc1",
+                    "anchors": [0,2,4],
+                    "posres": 1
+                    },
+                }
 
         specifies that coarse grain bead `"_B"` should be replaced with the
         fine-grain structure represented by the SMILES string `"c1sccc1"`,
         should form bonds to other fine-grained beads from atoms `[0, 2, 4]`,
         and should have a position restraint attached to atom `1`.
         The position restraint and anchors are optional.
-    bond_dict: dictionary of list of tuples
-        specifies what fine-grain bond should replace the bond in the coarse
-        structure. For example:
+    bond_dict: dict of list of tuple
+        Specifies what fine-grain bond should replace the bond in the coarse
+        structure. For example::
 
-        >>>     bond_dict = {
-        >>>         "_B_B": [(0,2),(2,0)],
-        >>>         }
+             bond_dict = {
+                 "_B_B": [(0,2),(2,0)],
+                 }
 
         specifies that the bond between two `"_B"` beads should be replaced in
         the fine-grain structure between the atoms `(0, 2)` or `(2, 0)`.
 
     Returns
     -------
-    mbuild.Compound
+    :py:class:`mbuild.Compound`
     """
 
     def fg_particles():
