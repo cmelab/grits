@@ -4,25 +4,22 @@ GRiTS
 A toolkit for working with coarse-grain systems.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Getting Started
+    :maxdepth: 2
+    :caption: Getting Started
 
-   introduction
-   installation
-   tutorial
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API
-
-   coarsegrain
-   finegrain
-   utils
-
+    introduction
+    installation
+    tutorial
 
 .. toctree::
-   :maxdepth: 1
-   :titlesonly:
-   :caption: Reference
+    :maxdepth: 2
+    :caption: API
 
-   license
+    grits
+
+.. toctree::
+    :maxdepth: 1
+    :titlesonly:
+    :caption: Reference
+
+    license
