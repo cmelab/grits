@@ -4,7 +4,7 @@ grits
 coarsegrain module
 ------------------
 
-.. automodule:: grits.coarsegrain
+.. autoclass:: grits.CG_Compound
    :members:
    :undoc-members:
    :show-inheritance:
