@@ -2,20 +2,13 @@
 Coarsegrain Module
 ==================
 
-.. rubric:: Overview
+.. currentmodule::
+    grits.coarsegrain
 
-.. autosummary::
-    :nosignatures:
-
-    grits.coarsegrain.CG_Compound
-    grits.coarsegrain.Bead
-
-.. rubric:: Details
-
-.. autoclass:: grits.coarsegrain.CG_Compound
+.. autoclass:: CG_Compound
     :members:
     :show-inheritance:
 
-.. autoclass:: grits.coarsegrain.Bead
+.. autoclass:: Bead
     :members:
     :show-inheritance:
