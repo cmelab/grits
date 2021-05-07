@@ -23,7 +23,7 @@ class CG_Compound(Compound):
     ----------
     compound : :py:class:`mbuild.Compound`
         fine-grain structure to be coarse-grained
-    beads : :py:class:`list` of :py:class:`tup` of :py:class:`str`
+    beads : :py:class:`list` of :py:class:`tuple` of :py:class:`str`
         list of pairs containing desired bead name followed by SMARTS string
         specification of that bead. For example::
 
@@ -36,7 +36,7 @@ class CG_Compound(Compound):
     ----------
     atomistic : :py:class:`mbuild.Compound`
         The atomistic structure
-    bead_inds : :py:class:`list` of :py:class:`tup`
+    bead_inds : :py:class:`list` of :py:class:`tuple`
         Each list item corresponds to the particle indices in that bead, the
         smarts string used to find that bead, and the name of the bead.
     """
@@ -130,7 +130,8 @@ class CG_Compound(Compound):
                 {'_CGBEAD': 'blue'}
 
         show_atomistic : bool, default False
-            Show the atomistic structure stored in :py:attribute:`atomistic`
+            Show the atomistic structure stored in
+            :py:attr:`CG_Compound.atomistic`
         scale : float, default 1.0
             Scaling factor to modify the size of objects in the view.
 
