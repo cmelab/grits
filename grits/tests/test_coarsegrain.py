@@ -6,7 +6,7 @@ from grits import CG_Compound
 
 class Test_CGCompound(BaseTest):
     def test_init_methane(self, methane):
-        cg_beads = [("_A", "C")]
+        cg_beads = {"_A": "C"}
 
         cg_methane = CG_Compound(methane, cg_beads)
 
@@ -18,7 +18,7 @@ class Test_CGCompound(BaseTest):
         assert len(types) == 1
 
     def test_init_p3ht(self, p3ht):
-        cg_beads = [("_B", "c1sccc1"), ("_S", "CCC")]
+        cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
 
         cg_p3ht = CG_Compound(p3ht, cg_beads)
 
@@ -31,13 +31,17 @@ class Test_CGCompound(BaseTest):
         assert len(types) == 2
 
     def test_notfoundsmarts(self, methane):
-        cg_beads = [("_A", "CCC")]
+        cg_beads = {"_A": "CCC"}
 
         with pytest.warns(UserWarning):
             CG_Compound(methane, cg_beads)
 
     def test_atomsleftout(self, p3ht):
-        cg_beads = [("_S", "CCC")]
+        cg_beads = {"_S": "CCC"}
 
         with pytest.warns(UserWarning):
             CG_Compound(p3ht, cg_beads)
+
+    def test_reprnoerror(self, cg_methane, cg_p3ht):
+        str(cg_p3ht)
+        str(cg_methane)
