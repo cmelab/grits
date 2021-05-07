@@ -12,4 +12,5 @@ Finegrain Module
 .. rubric:: Details
 
 .. automodule:: grits.finegrain
+    :synopsis: Backmapping functions.
     :members:
