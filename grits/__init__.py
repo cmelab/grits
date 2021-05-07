@@ -1,5 +1,7 @@
 """GRiTS: A coarse-grain toolkit using chemical grammars."""
-from . import coarsegrain, finegrain, utils
+from . import utils
 from .__version__ import __version__
+from .coarsegrain import Bead, CG_Compound
+from .finegrain import backmap
 
-__all__ = ["__version__", "coarsegrain", "finegrain", "utils"]
+__all__ = ["__version__", "CG_Compound", "Bead", "backmap", "utils"]
