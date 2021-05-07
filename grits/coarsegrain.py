@@ -16,36 +16,29 @@ from grits.utils import get_bonds, has_common_member, has_number
 class CG_Compound(Compound):
     """Coarse-grained Compound.
 
-    Wrapper for mbuild.Compound. Coarse-grained mapping can be specified using
-    SMARTS grammar.
+    Wrapper for :py:class:`mbuild.Compound`. Coarse-grained mapping can be
+    specified using SMARTS grammar.
 
     Parameters
     ----------
-    compound : mbuild.Compound
+    compound : :py:class:`mbuild.Compound`
         fine-grain structure to be coarse-grained
-    beads : list of tuples of strings
+    beads : :py:class:`list` of :py:class:`tup` of :py:class:`str`
         list of pairs containing desired bead name followed by SMARTS string
-        specification of that bead. For example:
+        specification of that bead. For example::
 
-        >>> beads = [("_B", "c1sccc1"), ("_S", "CCC")]
+            beads = [("_B", "c1sccc1"), ("_S", "CCC")]
 
-        would map a `"_B"` bead to any thiophene moiety (`"c1sccc1"`) found in
-        the compound and an `"_S"` bead to a propyl moiety (`"CCC"`).
+        would map a ``"_B"`` bead to any thiophene moiety (``"c1sccc1"``) found
+        in the compound and an ``"_S"`` bead to a propyl moiety (``"CCC"``).
 
     Attributes
     ----------
-    atomistic: mbuild.Compound
-        the atomistic structure
-    bead_inds: list of (tuple of ints, string, string)
+    atomistic : :py:class:`mbuild.Compound`
+        The atomistic structure
+    bead_inds : :py:class:`list` of :py:class:`tup`
         Each list item corresponds to the particle indices in that bead, the
         smarts string used to find that bead, and the name of the bead.
-
-    Methods
-    -------
-    visualize(
-        show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
-        )
-        Visualize the CG_Compound in a Jupyter Notebook.
     """
 
     def __init__(self, compound, beads):
@@ -123,8 +116,8 @@ class CG_Compound(Compound):
         """Visualize the Compound using py3dmol.
 
         Allows for visualization of a Compound within a Jupyter Notebook.
-        Modified to from mbuild.Compound.visualize to show atomistic elements
-        (translucent) with larger CG beads.
+        Modified to from :py:meth:`mbuild.Compound.visualize` to show atomistic
+        elements (translucent) with larger CG beads.
 
         Parameters
         ----------
@@ -132,12 +125,12 @@ class CG_Compound(Compound):
             Visualize Ports in addition to Particles
         color_scheme : dict, default {}
             Specify coloring for non-elemental particles keys are strings of
-            the particle names values are strings of the colors:
+            the particle names values are strings of the colors::
 
-            >>> {'_CGBEAD': 'blue'}
+                {'_CGBEAD': 'blue'}
 
         show_atomistic : bool, default False
-            Show the atomistic structure stored in CG_Compound.atomistic
+            Show the atomistic structure stored in :py:attribute:`atomistic`
         scale : float, default 1.0
             Scaling factor to modify the size of objects in the view.
 
@@ -253,7 +246,7 @@ class CG_Compound(Compound):
 class Bead(Compound):
     """Coarse-grained Bead.
 
-    Wrapper for mbuild.Compound.
+    Wrapper for :py:class:`mbuild.Compound`.
 
     Parameters
     ----------
