@@ -3,7 +3,8 @@ __all__ = ["CG_Compound", "Bead"]
 
 import os
 import tempfile
-from warnings import warn
+from collections import defaultdict
+from warnings import catch_warnings, simplefilter, warn
 
 import numpy as np
 from mbuild import Compound, clone
@@ -22,40 +23,70 @@ class CG_Compound(Compound):
     Parameters
     ----------
     compound : :py:class:`mbuild.Compound`
-        fine-grain structure to be coarse-grained
-    beads : :py:class:`list` of :py:class:`tuple` of :py:class:`str`
-        list of pairs containing desired bead name followed by SMARTS string
-        specification of that bead. For example::
+        Fine-grain structure to be coarse-grained
+    beads : dict
+        Dictionary with keys containing desired bead name and values containing
+        SMARTS string specification of that bead. For example::
 
-            beads = [("_B", "c1sccc1"), ("_S", "CCC")]
+            beads = {"_B": "c1sccc1", "_S": "CCC"}
 
         would map a ``"_B"`` bead to any thiophene moiety (``"c1sccc1"``) found
         in the compound and an ``"_S"`` bead to a propyl moiety (``"CCC"``).
 
     Attributes
     ----------
-    atomistic : :py:class:`mbuild.Compound`
-        The atomistic structure
-    bead_inds : :py:class:`list` of :py:class:`tuple`
-        Each list item corresponds to the particle indices in that bead, the
-        smarts string used to find that bead, and the name of the bead.
+    atomistic : mbuild.Compound,
+        The atomistic structure.
+    mapping : dict,
+        A mapping from atomistic to coarse-grain structure. Dictionary keys are
+        a tuple of bead name and smart string, and the values are a list of
+        tuples of fine-grain particle indices for each bead instance::
+
+            {('_B', 'c1sccc1'): [(0, 4, 3, 2, 1), ...], ...}
+
+    anchors : dict,
+        A mapping of the anchor particle indices in each bead. Dictionary keys
+        are the bead name and the values are a set of indices::
+
+            {"_B": {0, 2, 3}, ...}
+
+    bond_map: list of tuples,
+        A list of the bond types and the anchors to use for that bond::
+
+            [('_B-_S', (3, 0)), ...]
+
+    Methods
+    -------
+    visualize
+        Visualize the CG_Compound in a Jupyter Notebook.
     """
 
     def __init__(self, compound, beads):
         super(CG_Compound, self).__init__()
         self.atomistic = compound
+        self.anchors = None
+        self.bond_map = None
 
         mol = compound.to_pybel()
         mol.OBMol.PerceiveBondOrders()
 
-        self._set_bead_inds(beads, mol)
+        self._set_mapping(beads, mol)
         self._cg_particles()
         self._cg_bonds()
 
-    def _set_bead_inds(self, beads, mol):
+    def __repr__(self):
+        """Format the CG_Compound representation."""
+        return (
+            f"<{self.name}: {self.n_particles} beads "
+            + f"(from {self.atomistic.n_particles} atoms), "
+            + "pos=({:.4f},{: .4f},{: .4f}), ".format(*self.pos)
+            + f"{self.n_bonds:d} bonds>"
+        )
+
+    def _set_mapping(self, beads, mol):
+        """Set the mapping attribute."""
         matches = []
-        for i, item in enumerate(beads):
-            bead_name, smart_str = item
+        for bead_name, smart_str in beads.items():
             smarts = pybel.Smarts(smart_str)
             if not smarts.findall(mol):
                 warn(f"{smart_str} not found in compound!")
@@ -64,51 +95,79 @@ class CG_Compound(Compound):
                 matches.append((group, smart_str, bead_name))
 
         seen = set()
-        bead_inds = []
+        mapping = defaultdict(list)
         for group, smarts, name in matches:
             # smart strings for rings can share atoms
             # add bead regardless of whether it was seen
             if has_number(smarts):
-                for atom in group:
-                    seen.add(atom)
-                bead_inds.append((group, smarts, name))
+                seen.update(group)
+                mapping[(name, smarts)].append(group)
             # alkyl chains should be exclusive
             else:
                 if has_common_member(seen, group):
                     pass
                 else:
-                    for atom in group:
-                        seen.add(atom)
-                    bead_inds.append((group, smarts, name))
+                    seen.update(group)
+                    mapping[(name, smarts)].append(group)
 
         n_atoms = mol.OBMol.NumHvyAtoms()
         if n_atoms != len(seen):
             warn("Some atoms have been left out of coarse-graining!")
             # TODO make this more informative
-        self.bead_inds = bead_inds
+        self.mapping = mapping
 
     def _cg_particles(self):
         """Set the beads in the coarse-structure."""
-        for bead, smarts, bead_name in self.bead_inds:
-            bead_xyz = self.atomistic.xyz[bead, :]
-            avg_xyz = np.mean(bead_xyz, axis=0)
-            bead = Bead(name=bead_name, pos=avg_xyz, smarts=smarts)
-            self.add(bead)
+        for (name, smarts), inds in self.mapping.items():
+            for group in inds:
+                bead_xyz = self.atomistic.xyz[group, :]
+                avg_xyz = np.mean(bead_xyz, axis=0)
+                bead = Bead(name=name, pos=avg_xyz, smarts=smarts)
+                self.add(bead)
 
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
         bonds = get_bonds(self.atomistic)
-        bead_bonds = []
-        for i, (bead_i, _, _) in enumerate(self.bead_inds[:-1]):
-            for j, (bead_j, _, _) in enumerate(self.bead_inds[(i + 1) :]):
-                for pair in bonds:
-                    if (pair[0] in bead_i) and (pair[1] in bead_j):
-                        bead_bonds.append((i, j + i + 1))
-                    if (pair[1] in bead_i) and (pair[0] in bead_j):
-                        bead_bonds.append((i, j + i + 1))
-        for pair in bead_bonds:
-            bond_pair = [p for i, p in enumerate(self) if i in pair]
-            self.add_bond(bond_pair)
+        bead_inds = [
+            (name, group)
+            for (name, _), inds in self.mapping.items()
+            for group in inds
+        ]
+        anchors = defaultdict(set)
+        bond_map = []
+        for i, (iname, igroup) in enumerate(bead_inds[:-1]):
+            for j, (jname, jgroup) in enumerate(bead_inds[(i + 1) :]):
+                for a, b in bonds:
+                    if a in igroup and b in jgroup:
+                        anchors[iname].add(igroup.index(a))
+                        anchors[jname].add(jgroup.index(b))
+                        bondinfo = (
+                            f"{iname}-{jname}",
+                            (igroup.index(a), jgroup.index(b)),
+                        )
+
+                    elif b in igroup and a in jgroup:
+                        anchors[iname].add(igroup.index(b))
+                        anchors[jname].add(jgroup.index(a))
+                        bondinfo = (
+                            f"{iname}-{jname}",
+                            (igroup.index(b), jgroup.index(a)),
+                        )
+                    else:
+                        continue
+                    if bondinfo not in bond_map:
+                        # If the bond is between two beads of the same type,
+                        # add it to the end
+                        if iname == jname:
+                            bond_map.append(bondinfo)
+                        # Otherwise add it to the beginning
+                        else:
+                            bond_map.insert(0, bondinfo)
+
+                    self.add_bond([self[i], self[j + i + 1]])
+
+        self.anchors = anchors
+        self.bond_map = bond_map
 
     def visualize(
         self, show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
@@ -210,11 +269,14 @@ class CG_Compound(Compound):
 
         # coarse
         if cg_names:
-            coarse.save(
-                os.path.join(tmp_dir, "coarse_tmp.mol2"),
-                show_ports=show_ports,
-                overwrite=True,
-            )
+            # silence warning about No element found for CG bead
+            with catch_warnings():
+                simplefilter("ignore")
+                coarse.save(
+                    os.path.join(tmp_dir, "coarse_tmp.mol2"),
+                    show_ports=show_ports,
+                    overwrite=True,
+                )
             with open(os.path.join(tmp_dir, "coarse_tmp.mol2"), "r") as f:
                 view.addModel(f.read(), "mol2", keepH=True)
 
@@ -262,4 +324,4 @@ class Bead(Compound):
 
     def __init__(self, smarts=None, **kwargs):
         self.smarts = smarts
-        super(Bead, self).__init__(**kwargs)
+        super(Bead, self).__init__(element=None, **kwargs)

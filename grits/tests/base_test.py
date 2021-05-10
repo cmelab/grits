@@ -21,14 +21,24 @@ class BaseTest:
 
     @pytest.fixture
     def cg_methane(self, methane):
-        cg_beads = [("_A", "C")]
+        cg_beads = {"_A": "C"}
 
         cg_methane = CG_Compound(methane, cg_beads)
         return cg_methane
 
     @pytest.fixture
     def cg_p3ht(self, p3ht):
-        cg_beads = [("_B", "c1sccc1"), ("_S", "CCC")]
+        cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
 
         cg_p3ht = CG_Compound(p3ht, cg_beads)
         return cg_p3ht
+
+    @pytest.fixture
+    def alkane(self):
+        chain = mb.load("CCC" * 4, smiles=True)
+        return chain
+
+    @pytest.fixture
+    def cg_alkane(self, alkane):
+        cg_chain = CG_Compound(alkane, {"_A": "CCC"})
+        return cg_chain

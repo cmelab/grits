@@ -1,6 +1,3 @@
-import numpy as np
-
-
 def test_num2str():
     from grits.utils import num2str
 
@@ -9,14 +6,13 @@ def test_num2str():
     assert num2str(26) == "AA"
 
 
-def test_vdistance():
-    from grits.utils import v_distance
+def test_get_hydrogen():
+    from mbuild import Compound, load
 
-    pos_array = np.zeros((2, 3))
-    pos = np.array([1, 0, 0])
+    from grits.utils import get_hydrogen
 
-    assert np.array_equal(v_distance(pos, pos_array), [1, 1])
+    cl2 = load("[Cl][Cl]", smiles=True)
+    assert get_hydrogen(cl2, cl2[0]) is None
 
-    pos_array = np.array([[1, 0, 0], [1, 1, 1]])
-
-    assert np.allclose(v_distance(pos, pos_array), [0, 1.41421356])
+    methane = load("C", smiles=True)
+    assert isinstance(get_hydrogen(methane, methane[0]), Compound)
