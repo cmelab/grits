@@ -9,19 +9,19 @@ def align(compound, particle, towards_compound, around=None):
 
     Parameters
     ----------
-    compound: mbuild.Compound or CG_Compound,
+    compound : mbuild.Compound or CG_Compound,
         The compound to align
-    particle: mbuild.Compound or CG_Compound,
+    particle : mbuild.Compound or CG_Compound,
         The particle to point at towards_compound. Child of compound.
-    towards_compound: mbuild.Compound or CG_Compound,
+    towards_compound : mbuild.Compound or CG_Compound,
         The compound to point towards.
-    around: numpy.array, default None
+    around : numpy.ndarray, default None
         The unit vector around which the compound is spun. If None is given,
         an orthogonal vector is chosen.
 
     Returns
     -------
-    numpy.array
+    numpy.ndarray
         The unit vector about which the compound is rotated
     """
     # Find the unit vector from compound center to particle
@@ -47,16 +47,19 @@ def align(compound, particle, towards_compound, around=None):
 
 
 def get_bonds(compound):
-    """Convert Particle instances in bond_graph.bond_edges to their indices.
+    """Convert Particle instances in bond_graph.edges to their indices.
+
+    See :py:meth:`CG_Compound.bond_graph.edges`.
 
     Parameters
     ----------
     compound : mbuild.Compound or CG_Compound
-       Compound from which to get the indexed bond graph
+       Compound from which to get the indexed bond graph.
 
     Returns
     -------
-    sorted list of tuples of bonded particle indices
+    list[tuple(int, int)]
+        Sorted list of bonded particle indices
     """
     particle_list = [p for p in compound]
     bonds = []
@@ -79,7 +82,8 @@ def get_bonded(compound, particle):
 
     Returns
     -------
-    list of mbuild.Particles
+    list[mbuild.Particle]
+        The bonded particles.
     """
 
     def is_particle(i, j):
@@ -105,14 +109,15 @@ def get_index(compound, particle):
 
     Parameters
     ----------
-    compound: mbuild.Compound or CG_Compound
+    compound : mbuild.Compound or CG_Compound
         Compound which contains particle
-    particle: mbuild.Particle or Bead
+    particle : mbuild.Particle or Bead
         Particle for which to fetch the index
 
     Returns
     -------
     int
+        The particle index
     """
     return [p for p in compound].index(particle)
 
@@ -122,9 +127,9 @@ def get_hydrogen(compound, particle):
 
     Parameters
     ----------
-    compound: mbuild.Compound or CG_Compound
+    compound : mbuild.Compound or CG_Compound
         Compound which contains particle
-    particle: mbuild.Particle or Bead
+    particle : mbuild.Particle or Bead
         Particle from which to remove a hydrogen
     """
     hydrogens = [i for i in get_bonded(compound, particle) if i.name == "H"]
@@ -141,12 +146,13 @@ def has_number(string):
 
     Parameters
     ----------
-    string: str
-        string which may contain a number
+    string : str
+        String which may contain a number
 
     Returns
     -------
     bool
+        Whether the string contains a number.
     """
     return bool(re.search("[0-9]", string))
 
@@ -156,12 +162,13 @@ def has_common_member(it_a, it_b):
 
     Parameters
     ----------
-    it_a, it_b: iterable objects
-        iterable objects to compare
+    it_a, it_b : iterable object
+        Iterable objects to compare
 
     Returns
     -------
     bool
+        Whether the object share a common member.
     """
     return set(it_a) & set(it_b)
 
@@ -173,8 +180,8 @@ def num2str(num):
 
     Parameters
     ----------
-    num: int
-        number to convert
+    num : int
+        Number to convert
 
     Examples
     --------
@@ -188,6 +195,7 @@ def num2str(num):
     Returns
     -------
     str
+        The string conversion of the number
     """
     if num < 26:
         return chr(num + 65)

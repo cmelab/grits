@@ -1,4 +1,6 @@
 """GRiTS: Fine-graining tools."""
+__all__ = ["backmap"]
+
 import itertools as it
 from collections import defaultdict
 
@@ -15,12 +17,13 @@ def backmap(cg_compound):
 
     Parameters
     ----------
-    cg_compound: CG_Compound
+    cg_compound : CG_Compound
         Coarse-grained compound
 
     Returns
     -------
-    mbuild.Compound
+    :py:class:`mbuild.Compound`
+        The atomistic structure mapped onto the coarse-grained one.
     """
 
     def fg_particles():

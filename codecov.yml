@@ -10,4 +10,5 @@ ignore:
     - "grits/tests"
     - "grits/compounds"
     - "grits/__version__.py"
+    - "docs"
     - "setup.py"
