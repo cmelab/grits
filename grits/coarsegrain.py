@@ -54,11 +54,6 @@ class CG_Compound(Compound):
         A list of the bond types and the anchors to use for that bond::
 
             [('_B-_S', (3, 0)), ...]
-
-    Methods
-    -------
-    visualize
-        Visualize the CG_Compound in a Jupyter Notebook.
     """
 
     def __init__(self, compound, beads):
