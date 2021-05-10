@@ -15,13 +15,13 @@ def align(compound, particle, towards_compound, around=None):
         The particle to point at towards_compound. Child of compound.
     towards_compound : mbuild.Compound or CG_Compound,
         The compound to point towards.
-    around : numpy.array, default None
+    around : numpy.ndarray, default None
         The unit vector around which the compound is spun. If None is given,
         an orthogonal vector is chosen.
 
     Returns
     -------
-    numpy.array
+    numpy.ndarray
         The unit vector about which the compound is rotated
     """
     # Find the unit vector from compound center to particle
@@ -53,13 +53,13 @@ def get_bonds(compound):
 
     Parameters
     ----------
-    compound : :py:class:`mbuild.Compound` or CG_Compound
+    compound : mbuild.Compound or CG_Compound
        Compound from which to get the indexed bond graph.
 
     Returns
     -------
-    list of tuple of int
-        sorted list of bonded particle indices
+    list[tuple(int, int)]
+        Sorted list of bonded particle indices
     """
     particle_list = [p for p in compound]
     bonds = []
@@ -75,14 +75,15 @@ def get_bonded(compound, particle):
 
     Parameters
     ----------
-    compound : :py:class:`mbuild.Compound` or CG_Compound
+    compound : mbuild.Compound or CG_Compound
         Compound containing particle
-    particle : :py:class:`mbuild.Particle` or Bead
+    particle : mbuild.Particle or Bead
         Particle to which the directly bonded neighbors are requested
 
     Returns
     -------
-    list of :py:class:`mbuild.Particle`
+    list[mbuild.Particle]
+        The bonded particles.
     """
 
     def is_particle(i, j):
@@ -108,9 +109,9 @@ def get_index(compound, particle):
 
     Parameters
     ----------
-    compound: mbuild.Compound or CG_Compound
+    compound : mbuild.Compound or CG_Compound
         Compound which contains particle
-    particle: mbuild.Particle or Bead
+    particle : mbuild.Particle or Bead
         Particle for which to fetch the index
 
     Returns
@@ -151,6 +152,7 @@ def has_number(string):
     Returns
     -------
     bool
+        Whether the string contains a number.
     """
     return bool(re.search("[0-9]", string))
 
@@ -160,12 +162,13 @@ def has_common_member(it_a, it_b):
 
     Parameters
     ----------
-    it_a, it_b : iterable
-        iterable objects to compare
+    it_a, it_b : iterable object
+        Iterable objects to compare
 
     Returns
     -------
     bool
+        Whether the object share a common member.
     """
     return set(it_a) & set(it_b)
 
