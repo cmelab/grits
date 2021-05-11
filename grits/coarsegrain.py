@@ -42,6 +42,8 @@ class CG_Compound(Compound):
             mapping = {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...]}
 
         User must provide only one of beads or mapping.
+    allow_overlap : bool, default False,
+        Whether to allow beads representing ring structures to share atoms.
 
     Attributes
     ----------
@@ -66,7 +68,9 @@ class CG_Compound(Compound):
             [('_B-_S', (3, 0)), ...]
     """
 
-    def __init__(self, compound, beads=None, mapping=None, **kwargs):
+    def __init__(
+        self, compound, beads=None, mapping=None, allow_overlap=False, **kwargs
+    ):
         super(CG_Compound, self).__init__(**kwargs)
         if (beads is None) == (mapping is None):
             raise ValueError(
@@ -80,7 +84,7 @@ class CG_Compound(Compound):
             mol = compound.to_pybel()
             mol.OBMol.PerceiveBondOrders()
 
-            self._set_mapping(beads, mol)
+            self._set_mapping(beads, mol, allow_overlap)
         elif mapping is not None:
             if not isinstance(mapping, dict):
                 with open(mapping, "r") as f:
@@ -98,7 +102,7 @@ class CG_Compound(Compound):
             + f"{self.n_bonds:d} bonds>"
         )
 
-    def _set_mapping(self, beads, mol):
+    def _set_mapping(self, beads, mol, allow_overlap):
         """Set the mapping attribute."""
         matches = []
         for bead_name, smart_str in beads.items():
@@ -112,12 +116,19 @@ class CG_Compound(Compound):
         seen = set()
         mapping = defaultdict(list)
         for group, smarts, name in matches:
-            # smart strings for rings can share atoms
-            # add bead regardless of whether it was seen
-            if has_number(smarts):
-                seen.update(group)
-                mapping[f"{name}...{smarts}"].append(group)
-            # alkyl chains should be exclusive
+            if allow_overlap:
+                # smart strings for rings can share atoms
+                # add bead regardless of whether it was seen
+                if has_number(smarts):
+                    seen.update(group)
+                    mapping[f"{name}...{smarts}"].append(group)
+                # alkyl chains should be exclusive
+                else:
+                    if has_common_member(seen, group):
+                        pass
+                    else:
+                        seen.update(group)
+                        mapping[f"{name}...{smarts}"].append(group)
             else:
                 if has_common_member(seen, group):
                     pass
