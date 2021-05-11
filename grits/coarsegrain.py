@@ -39,7 +39,7 @@ class CG_Compound(Compound):
         keys contain desired bead name and SMARTS string specification of that
         bead and values containing list of tuples of atom indices::
 
-            mapping = {('_B', 'c1sccc1'): [(0, 4, 3, 2, 1), ...]}
+            mapping = {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...]}
 
         User must provide only one of beads or mapping.
 
@@ -49,10 +49,10 @@ class CG_Compound(Compound):
         The atomistic structure.
     mapping : dict
         A mapping from atomistic to coarse-grain structure. Dictionary keys are
-        a tuple of bead name and smart string, and the values are a list of
-        tuples of fine-grain particle indices for each bead instance::
+        the bead name and SMARTS string (separated by "..."), and the values are
+        a list of tuples of fine-grain particle indices for each bead instance::
 
-            {('_B', 'c1sccc1'): [(0, 4, 3, 2, 1), ...], ...}
+            {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...], ...}
 
     anchors : dict
         A mapping of the anchor particle indices in each bead. Dictionary keys
@@ -185,7 +185,21 @@ class CG_Compound(Compound):
         self.anchors = anchors
         self.bond_map = bond_map
 
-    def _save_mapping(self, filename=None):
+    def save_mapping(self, filename=None):
+        """Save the mapping operator to a json file.
+
+        Parameters
+        ----------
+        filename : str, default None
+            Filename where the mapping operator will be saved in json format.
+            If None is provided, the filename will be CG_Compound.name +
+            "_mapping.json".
+
+        Returns
+        -------
+        str
+            Path to saved mapping
+        """
         if filename is None:
             filename = f"{self.name}_mapping.json"
         with open(filename, "w") as f:
