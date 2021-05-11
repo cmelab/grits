@@ -1,6 +1,7 @@
 """GRiTS: Coarse-graining tools."""
 __all__ = ["CG_Compound", "Bead"]
 
+import json
 import os
 import tempfile
 from collections import defaultdict
@@ -24,7 +25,7 @@ class CG_Compound(Compound):
     ----------
     compound : mbuild.Compound
         Fine-grain structure to be coarse-grained
-    beads : dict
+    beads : dict, default None
         Dictionary with keys containing desired bead name and values containing
         SMARTS string specification of that bead. For example::
 
@@ -32,6 +33,15 @@ class CG_Compound(Compound):
 
         would map a ``"_B"`` bead to any thiophene moiety (``"c1sccc1"``) found
         in the compound and an ``"_S"`` bead to a propyl moiety (``"CCC"``).
+        User must provide only one of beads or mapping.
+    mapping : dict or path, default None
+        Either a dictionary or path to a json file of a dictionary. Dictionary
+        keys contain desired bead name and SMARTS string specification of that
+        bead and values containing list of tuples of atom indices::
+
+            mapping = {('_B', 'c1sccc1'): [(0, 4, 3, 2, 1), ...]}
+
+        User must provide only one of beads or mapping.
 
     Attributes
     ----------
@@ -56,16 +66,26 @@ class CG_Compound(Compound):
             [('_B-_S', (3, 0)), ...]
     """
 
-    def __init__(self, compound, beads):
-        super(CG_Compound, self).__init__()
+    def __init__(self, compound, beads=None, mapping=None, **kwargs):
+        super(CG_Compound, self).__init__(**kwargs)
+        if (beads is None) == (mapping is None):
+            raise ValueError(
+                "Please provide only one of either beads or mapping."
+            )
         self.atomistic = compound
         self.anchors = None
         self.bond_map = None
 
-        mol = compound.to_pybel()
-        mol.OBMol.PerceiveBondOrders()
+        if beads is not None:
+            mol = compound.to_pybel()
+            mol.OBMol.PerceiveBondOrders()
 
-        self._set_mapping(beads, mol)
+            self._set_mapping(beads, mol)
+        elif mapping is not None:
+            if not isinstance(mapping, dict):
+                with open(mapping, "r") as f:
+                    mapping = json.load(f)
+            self.mapping = mapping
         self._cg_particles()
         self._cg_bonds()
 
@@ -96,14 +116,14 @@ class CG_Compound(Compound):
             # add bead regardless of whether it was seen
             if has_number(smarts):
                 seen.update(group)
-                mapping[(name, smarts)].append(group)
+                mapping[f"{name}...{smarts}"].append(group)
             # alkyl chains should be exclusive
             else:
                 if has_common_member(seen, group):
                     pass
                 else:
                     seen.update(group)
-                    mapping[(name, smarts)].append(group)
+                    mapping[f"{name}...{smarts}"].append(group)
 
         n_atoms = mol.OBMol.NumHvyAtoms()
         if n_atoms != len(seen):
@@ -113,7 +133,8 @@ class CG_Compound(Compound):
 
     def _cg_particles(self):
         """Set the beads in the coarse-structure."""
-        for (name, smarts), inds in self.mapping.items():
+        for key, inds in self.mapping.items():
+            name, smarts = key.split("...")
             for group in inds:
                 bead_xyz = self.atomistic.xyz[group, :]
                 avg_xyz = np.mean(bead_xyz, axis=0)
@@ -124,8 +145,8 @@ class CG_Compound(Compound):
         """Set the bonds in the coarse structure."""
         bonds = get_bonds(self.atomistic)
         bead_inds = [
-            (name, group)
-            for (name, _), inds in self.mapping.items()
+            (key.split("...")[0], group)
+            for key, inds in self.mapping.items()
             for group in inds
         ]
         anchors = defaultdict(set)
@@ -163,6 +184,14 @@ class CG_Compound(Compound):
 
         self.anchors = anchors
         self.bond_map = bond_map
+
+    def _save_mapping(self, filename=None):
+        if filename is None:
+            filename = f"{self.name}_mapping.json"
+        with open(filename, "w") as f:
+            json.dump(self.mapping, f)
+        print(f"Mapping saved to {filename}")
+        return filename
 
     def visualize(
         self, show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
