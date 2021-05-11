@@ -42,6 +42,12 @@ class Test_CGCompound(BaseTest):
         with pytest.warns(UserWarning):
             CG_Compound(p3ht, cg_beads)
 
+    def test_badinit(self, p3ht):
+        with pytest.raises(ValueError):
+            CG_Compound(p3ht, beads="heck", mapping="this")
+        with pytest.raises(ValueError):
+            CG_Compound(p3ht)
+
     def test_reprnoerror(self, cg_methane, cg_p3ht):
         str(cg_p3ht)
         str(cg_methane)
