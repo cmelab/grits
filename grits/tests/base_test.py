@@ -9,11 +9,6 @@ test_dir = path.dirname(__file__)
 
 
 class BaseTest:
-    def mapping(self, cg_comp, tmpdir):
-        filename = tmpdir.mkdir("sub").join("mapping.txt")
-        cg_comp.save_mapping(filename)
-        return filename
-
     @pytest.fixture
     def p3ht(self):
         p3ht = mb.load(path.join(test_dir, "assets/P3HT_16.mol2"))
@@ -30,16 +25,22 @@ class BaseTest:
         return chain
 
     @pytest.fixture
-    def p3ht_mapping(self, p3ht):
-        return mapping(p3ht)
+    def p3ht_mapping(self, cg_p3ht, tmpdir):
+        filename = tmpdir.mkdir("sub").join("p3htmapping.json")
+        cg_p3ht.save_mapping(filename)
+        return filename
 
     @pytest.fixture
-    def methane_mapping(self, methane):
-        return mapping(methane)
+    def methane_mapping(self, cg_methane, tmpdir):
+        filename = tmpdir.mkdir("sub").join("methanemapping.json")
+        cg_methane.save_mapping(filename)
+        return filename
 
     @pytest.fixture
-    def alkane_mapping(self, alkane):
-        return mapping(alkane)
+    def alkane_mapping(self, cg_alkane):
+        filename = tmpdir.mkdir("sub").join("alkanemapping.json")
+        cg_alkane.save_mapping(filename)
+        return filename
 
     @pytest.fixture
     def cg_p3ht(self, p3ht):
