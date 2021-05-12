@@ -82,6 +82,9 @@ class Test_CGCompound(BaseTest):
         with pytest.raises(ValueError):
             CG_Compound(p3ht)
 
+    def test_savemapping(self, cg_methane):
+        assert cg_methane.save_mapping() == "CG_Compound_mapping.json"
+
     def test_reprnoerror(self, cg_methane, cg_p3ht):
         str(cg_p3ht)
         str(cg_methane)
