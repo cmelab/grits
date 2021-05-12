@@ -36,8 +36,9 @@ def backmap(cg_compound):
             b = load(smiles, smiles=True)
             b.translate_to(bead.pos)
             anchors[i] = dict()
-            for index in cg_compound.anchors[bead.name]:
-                anchors[i][index] = b[index]
+            if cg_compound.anchors is not None:
+                for index in cg_compound.anchors[bead.name]:
+                    anchors[i][index] = b[index]
             fine_grained.add(b, str(i))
         return fine_grained, anchors
 
