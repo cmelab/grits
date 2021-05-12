@@ -192,9 +192,9 @@ class CG_Compound(Compound):
                             bond_map.insert(0, bondinfo)
 
                     self.add_bond([self[i], self[j + i + 1]])
-
-        self.anchors = anchors
-        self.bond_map = bond_map
+        if anchors and bond_map:
+            self.anchors = anchors
+            self.bond_map = bond_map
 
     def save_mapping(self, filename=None):
         """Save the mapping operator to a json file.
