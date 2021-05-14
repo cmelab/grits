@@ -20,11 +20,27 @@ class BaseTest:
         return methane
 
     @pytest.fixture
-    def cg_methane(self, methane):
-        cg_beads = {"_A": "C"}
+    def alkane(self):
+        chain = mb.load("CCC" * 4, smiles=True)
+        return chain
 
-        cg_methane = CG_Compound(methane, cg_beads)
-        return cg_methane
+    @pytest.fixture
+    def p3ht_mapping(self, cg_p3ht, tmpdir):
+        filename = tmpdir.mkdir("sub").join("p3htmapping.json")
+        cg_p3ht.save_mapping(filename)
+        return filename
+
+    @pytest.fixture
+    def methane_mapping(self, cg_methane, tmpdir):
+        filename = tmpdir.mkdir("sub").join("methanemapping.json")
+        cg_methane.save_mapping(filename)
+        return filename
+
+    @pytest.fixture
+    def alkane_mapping(self, cg_alkane):
+        filename = tmpdir.mkdir("sub").join("alkanemapping.json")
+        cg_alkane.save_mapping(filename)
+        return filename
 
     @pytest.fixture
     def cg_p3ht(self, p3ht):
@@ -34,9 +50,11 @@ class BaseTest:
         return cg_p3ht
 
     @pytest.fixture
-    def alkane(self):
-        chain = mb.load("CCC" * 4, smiles=True)
-        return chain
+    def cg_methane(self, methane):
+        cg_beads = {"_A": "C"}
+
+        cg_methane = CG_Compound(methane, cg_beads)
+        return cg_methane
 
     @pytest.fixture
     def cg_alkane(self, alkane):
