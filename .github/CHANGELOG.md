@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+## 0.1.2 - 2021-05-14
+- Add `save_mapping` function (this required changing the mapping keys to be json serializable (not tuple))
+- Allow a `CG_Compound` to be initialized from bead specification or a mapping
+- Add `allow_overlap` kwarg to decide if ring structures share atoms
+
+## 0.1.1 - 2021-05-10
+- Add docs
 
 ## 0.1.0 - 2021-05-05
 - Updated the format used to specify a mapping
