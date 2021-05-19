@@ -28,7 +28,7 @@ def write_snapshot(beads):
                     pair *= 2
                 all_pairs.append(f"{pair[0]}-{pair[1]}")
                 pair_groups.append([idx, idx+1])
-        except:
+        except IndexError:
             pass
 
     types = list(set(all_types)) 

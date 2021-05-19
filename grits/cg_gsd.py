@@ -1,5 +1,3 @@
-from cmeutils import gsd_utils
-from cmeutils.gsd_utils import snap_molecule_cluster
 import freud
 import numpy as np
 
@@ -8,18 +6,17 @@ class System:
     """
     def __init__(self,
             atoms_per_monomer,
-            gsd_file=None,
             snap=None,
-            gsd_frame=-1):
+            ):
         self.atoms_per_monomer = atoms_per_monomer
-        self.snap = gsd_utils._validate_inputs(gsd_file, snap, gsd_frame)
+        self.snap = snap
         self.clusters = snap_molecule_cluster(snap=self.snap)
         self.molecule_ids = set(self.clusters)
         self.n_molecules = len(self.molecule_ids)
         self.n_atoms = len(self.clusters)
         self.n_monomers = int(self.n_atoms / self.atoms_per_monomer)
         self.molecules = [Molecule(self, i) for i in self.molecule_ids] 
-        self.box = gsd_utils.snap_box(gsd_file, snap, gsd_frame)
+        self.box = snap.configuration.box
         assert len(self.molecules) == self.n_molecules
 
     def monomers(self):
@@ -66,7 +63,7 @@ class Structure:
 
     Parameters:
     -----------
-    system : 'cmeutils.polymers.System', required
+    system : 'grits.cg_gsd.System', required
         The system object initially created from the input .gsd file.
     atom_indices : np.ndarray(n, 3), optional, default=None
         The atom indices in the system that belong to this specific structure.
@@ -75,7 +72,7 @@ class Structure:
 
     Attributes:
     -----------
-    system : 'cmeutils.polymers.System'
+    system : 'grits.cg_gsd.System'
         The system that this structure belong to. Contains needed information
         about the box, and gsd snapshot which are used elsewhere.
     atom_indices : np.ndarray(n_atoms, 3)
@@ -275,3 +272,32 @@ class Component(Structure):
                 )
         self.monomer = monomer
         
+
+def snap_molecule_cluster(snap=None):
+    """Find molecule index for each particle.
+
+    Compute clusters of bonded molecules and return an array of the molecule
+    index of each particle.
+    Pass in either a gsd file or a snapshot, but not both
+
+    Parameters
+    ----------
+    snap : gsd.hoomd.Snapshot, default None
+
+    Returns
+    -------
+    numpy array (N_particles,)
+    """
+    system = freud.AABBQuery.from_system(snap)
+    n_query_points = n_points = snap.particles.N
+    query_point_indices = snap.bonds.group[:, 0]
+    point_indices = snap.bonds.group[:, 1]
+    distances = system.box.compute_distances(
+        system.points[query_point_indices], system.points[point_indices]
+    )
+    nlist = freud.NeighborList.from_arrays(
+        n_query_points, n_points, query_point_indices, point_indices, distances
+    )
+    cluster = freud.cluster.Cluster()
+    cluster.compute(system=system, neighbors=nlist)
+    return cluster.cluster_idx
