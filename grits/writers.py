@@ -26,7 +26,7 @@ def write_snapshot(beads):
                 if len(pair) == 1:
                     pair *= 2
                 all_pairs.append(f"{pair[0]}-{pair[1]}")
-                pair_groups.append([idx, idx+1])
+                pair_groups.append([idx, idx + 1])
                 pair_groups.append([idx, idx + 1])
         except IndexError:
             pass

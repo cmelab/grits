@@ -5,12 +5,13 @@ from cmeutils.gsd_utils import snap_molecule_cluster
 
 
 class System:
-    """
-    """
-    def __init__(self,
-            atoms_per_monomer,
-            snap=None,
-            ):
+    """ """
+
+    def __init__(
+        self,
+        atoms_per_monomer,
+        snap=None,
+    ):
         self.atoms_per_monomer = atoms_per_monomer
         self.snap = snap
         self.clusters = snap_molecule_cluster(snap=self.snap)
@@ -18,7 +19,7 @@ class System:
         self.n_molecules = len(self.molecule_ids)
         self.n_atoms = len(self.clusters)
         self.n_monomers = int(self.n_atoms / self.atoms_per_monomer)
-        self.molecules = [Molecule(self, i) for i in self.molecule_ids] 
+        self.molecules = [Molecule(self, i) for i in self.molecule_ids]
         self.box = snap.configuration.box
         assert len(self.molecules) == self.n_molecules
 
@@ -270,7 +271,8 @@ class Component(Structure):
             name=name,
         )
         self.monomer = monomer
-        
+
+
 def snap_molecule_cluster(snap=None):
     """Find molecule index for each particle.
 
