@@ -1,6 +1,7 @@
 import freud
 import numpy as np
 
+
 class System:
     """ """
 
@@ -168,8 +169,8 @@ class Structure:
 
 
 class Molecule(Structure):
-    """
-    """
+    """ """
+
     def __init__(self, system, molecule_id):
         super(Molecule, self).__init__(system=system, molecule_id=molecule_id)
         self.monomers = self.generate_monomers()
@@ -213,8 +214,8 @@ class Molecule(Structure):
 
 
 class Monomer(Structure):
-    """
-    """
+    """ """
+
     def __init__(self, parent, atom_indices):
         super(Monomer, self).__init__(
             system=parent.system, parent=parent, atom_indices=atom_indices
@@ -244,13 +245,11 @@ class Monomer(Structure):
 
 
 class Segment(Structure):
-    """
-    """
+    """ """
+
     def __init__(self, molecule, atom_indices):
         super(Segment, self).__init__(
-            system=molecule.system,
-            atom_indices=atom_indices,
-            parent=molecule
+            system=molecule.system, atom_indices=atom_indices, parent=molecule
         )
         self.monomers = self.generate_monomers()
         assert len(self.monomers) == int(
