@@ -1,7 +1,123 @@
 """Utility functions for GRiTS."""
 import re
 
+import freud
 import numpy as np
+from ele import element_from_symbol
+from openbabel import openbabel
+
+
+def snap_to_mol2(
+    snap, elements, scale=1.0, molecule_ind=None, outfilename="gsd.mol2"
+):
+    """Write a gsd.hoomd.Snapshot to a mol2 file."""
+    if molecule_ind is not None:
+        assert isinstance(molecule_ind, int)
+        molecules = snap_molecules(snap)
+        m_where = molecules == molecule_ind
+        pos = snap.particles.position[m_where] * scale
+        atypes = np.array(snap.particles.types)[snap.particles.typeid[m_where]]
+        n_particles = len(pos)
+        bonds = [
+            (i, j)
+            for (i, j) in snap.bonds.group
+            if i < n_particles and j < n_particles
+        ]
+        n_bonds = len(bonds)
+    else:
+        pos = snap.particles.position * scale
+        atypes = np.array(snap.particles.types)[snap.particles.typeid]
+        n_particles = snap.particles.N
+        bonds = snap.bonds.group
+        n_bonds = snap.bonds.N
+    # way faster way to do [elements[i] for i in typearr] if types << n_particles
+    u, inv = np.unique(atypes, return_inverse=True)
+    elems = np.array([elements[x] for x in u])[inv].reshape(atypes.shape)
+
+    box = snap.configuration.box[:3] * scale
+
+    lines = [
+        "@<TRIPOS>MOLECULE\n",
+        "RES\n",
+        f"{n_particles} {n_bonds} 1 0 1\n",
+        "SMALL\n",
+        "NO_CHARGES\n",
+        "\n@<TRIPOS>CRYSIN\n",
+        f"{box[0]}\t{box[1]}\t{box[2]}\t90\t90\t90\t1\t1\n",
+        "\n@<TRIPOS>ATOM\n",
+    ]
+    for i in range(n_particles):
+        lines.append(
+            f"\t{i} {atypes[i]}\t{pos[i,0]}\t{pos[i,1]}\t{pos[i,2]} {elems[i]}\t1 RES\n"
+        )
+
+    lines.append("\n@<TRIPOS>BOND\n")
+    for n, (i, j) in enumerate(bonds):
+        i += 1
+        j += 1
+        lines.append(f"\t{n}\t{i}\t{j} 1\n")
+
+    lines.append("\n@<TRIPOS>SUBSTRUCTURE\n")
+    lines.append("\t1 RES\t1 RESIDUE\t0 **** ROOT 0")
+
+    with open(outfilename, "w") as f:
+        f.writelines(lines)
+    print(f"written to {outfilename}")
+    return outfilename
+
+
+def snap_to_openbabel(snap, conversion, molecule=0, scale=1):
+    """Write a gsd.hoomd.Snapshot to an openbabel.OBMol."""
+    mol = openbabel.OBMol()
+    if molecule is not None:
+        m_inds = snap_molecules(snap)
+        positions = snap.particles.position[m_inds == molecule] * scale
+        typeids = snap.particles.typeid[m_inds == molecule]
+    else:
+        positions = snap.particles.position * scale
+        typeids = snap.particles.typeid
+
+    for typeid, (x, y, z) in zip(typeids, positions):
+        a_num = element_from_symbol(
+            conversion[snap.particles.types[typeid]]
+        ).atomic_number
+        a = openbabel.OBAtom()
+        a.SetAtomicNum(a_num)
+        a.SetVector(float(x), float(y), float(z))
+        mol.AddAtom(a)
+
+    if molecule is None:
+        for i, j in snap.bonds.group:
+            i += 1
+            j += 1
+            mol.AddBond(int(i), int(j), 1)
+        mol.PerceiveBondOrders()
+        return mol
+    for i, j in snap.bonds.group:
+        if m_inds[i] != molecule or m_inds[j] != molecule:
+            continue
+        i += 1
+        j += 1
+        mol.AddBond(int(i), int(j), 1)
+    mol.PerceiveBondOrders()
+    return mol
+
+
+def snap_molecules(snap):
+    """Get the molecule indices based on bonding in a gsd.hoomd.Snapshot."""
+    system = freud.AABBQuery.from_system(snap)
+    n_query_points = n_points = snap.particles.N
+    query_point_indices = snap.bonds.group[:, 0]
+    point_indices = snap.bonds.group[:, 1]
+    distances = system.box.compute_distances(
+        system.points[query_point_indices], system.points[point_indices]
+    )
+    nlist = freud.NeighborList.from_arrays(
+        n_query_points, n_points, query_point_indices, point_indices, distances
+    )
+    cluster = freud.cluster.Cluster()
+    cluster.compute(system=system, neighbors=nlist)
+    return cluster.cluster_idx
 
 
 def align(compound, particle, towards_compound, around=None):
