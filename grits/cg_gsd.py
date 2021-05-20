@@ -1,20 +1,13 @@
 import freud
 import numpy as np
-from cmeutils import gsd_utils
-from cmeutils.gsd_utils import snap_molecule_cluster
-
 
 class System:
     """ """
 
-    def __init__(
-        self,
-        atoms_per_monomer,
-        snap=None,
-    ):
+    def __init__(self, snap, atoms_per_monomer):
         self.atoms_per_monomer = atoms_per_monomer
         self.snap = snap
-        self.clusters = snap_molecule_cluster(snap=self.snap)
+        self.clusters = _snap_molecule_cluster(snap=self.snap)
         self.molecule_ids = set(self.clusters)
         self.n_molecules = len(self.molecule_ids)
         self.n_atoms = len(self.clusters)
@@ -175,8 +168,8 @@ class Structure:
 
 
 class Molecule(Structure):
-    """ """
-
+    """
+    """
     def __init__(self, system, molecule_id):
         super(Molecule, self).__init__(system=system, molecule_id=molecule_id)
         self.monomers = self.generate_monomers()
@@ -191,6 +184,7 @@ class Molecule(Structure):
         monomer_sequence += sequence[
             : (self.n_monomers - len(monomer_sequence))
         ]
+        self.sequence = monomer_sequence
         for i, name in enumerate(list(monomer_sequence)):
             self.monomers[i].name = name
 
@@ -219,8 +213,8 @@ class Molecule(Structure):
 
 
 class Monomer(Structure):
-    """ """
-
+    """
+    """
     def __init__(self, parent, atom_indices):
         super(Monomer, self).__init__(
             system=parent.system, parent=parent, atom_indices=atom_indices
@@ -250,11 +244,13 @@ class Monomer(Structure):
 
 
 class Segment(Structure):
-    """ """
-
+    """
+    """
     def __init__(self, molecule, atom_indices):
         super(Segment, self).__init__(
-            system=molecule.system, atom_indices=atom_indices, parent=molecule
+            system=molecule.system,
+            atom_indices=atom_indices,
+            parent=molecule
         )
         self.monomers = self.generate_monomers()
         assert len(self.monomers) == int(
@@ -273,7 +269,7 @@ class Component(Structure):
         self.monomer = monomer
 
 
-def snap_molecule_cluster(snap=None):
+def _snap_molecule_cluster(snap=None):
     """Find molecule index for each particle.
 
     Compute clusters of bonded molecules and return an array of the molecule
