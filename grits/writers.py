@@ -22,9 +22,7 @@ def write_snapshot(beads):
         all_pos.append(bead.center)
         try:
             if bead.parent == beads[idx + 1].parent:
-                pair = list(set([bead.name, beads[idx + 1].name]))
-                if len(pair) == 1:
-                    pair *= 2
+                pair = sorted([bead.name, beads[idx+1].name)
                 all_pairs.append(f"{pair[0]}-{pair[1]}")
                 pair_groups.append([idx, idx + 1])
         except IndexError:
@@ -41,7 +39,7 @@ def write_snapshot(beads):
     s.bonds.M = 2
     s.angles.N = len(all_angles)
     s.particles.types = types
-    s.particles.typeids = np.array(type_ids)
+    s.particles.typeid = np.array(type_ids)
     s.particles.position = np.array(all_pos)
     s.bonds.types = pairs
     s.bonds.typeid = np.array(pair_ids)
