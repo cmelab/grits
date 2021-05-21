@@ -410,8 +410,6 @@ class CG_System:
 
     Attributes
     ----------
-    atomistic : mbuild.Compound
-        The atomistic structure.
     mapping : dict
         A mapping from atomistic to coarse-grain structure. Dictionary keys are
         the bead name and SMARTS string (separated by "..."), and the values are
@@ -463,6 +461,7 @@ class CG_System:
 
     def _set_mapping(self, beads, allow_overlap):
         """Set the mapping attribute."""
+        # TODO start here
         matches = []
         for bead_name, smart_str in beads.items():
             smarts = pybel.Smarts(smart_str)
