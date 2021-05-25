@@ -48,7 +48,8 @@ def snap_to_mol2(
     ]
     for i in range(n_particles):
         lines.append(
-            f"\t{i} {atypes[i]}\t{pos[i,0]}\t{pos[i,1]}\t{pos[i,2]} {elems[i]}\t1 RES\n"
+            f"\t{i} {atypes[i]}\t{pos[i,0]}\t{pos[i,1]}\t{pos[i,2]} {elems[i]}"
+            + "\t1 RES\n"
         )
 
     lines.append("\n@<TRIPOS>BOND\n")
@@ -66,8 +67,8 @@ def snap_to_mol2(
     return outfilename
 
 
-def snap_to_openbabel(snap, conversion, molecule=0, scale=1):
-    """Write a gsd.hoomd.Snapshot to an openbabel.OBMol."""
+def snap_to_pybel(snap, conversion, molecule=0, scale=1):
+    """Write a gsd.hoomd.Snapshot to a pybel.Molecule."""
     mol = openbabel.OBMol()
     if molecule is not None:
         m_inds = snap_molecules(snap)
@@ -100,7 +101,7 @@ def snap_to_openbabel(snap, conversion, molecule=0, scale=1):
         j += 1
         mol.AddBond(int(i), int(j), 1)
     mol.PerceiveBondOrders()
-    return mol
+    return pybel.Molecule(mol)
 
 
 def snap_molecules(snap):
