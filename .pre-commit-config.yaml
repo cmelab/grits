@@ -16,7 +16,7 @@ repos:
     - id: isort
       name: isort (python)
 - repo: https://github.com/pycqa/pydocstyle
-  rev: '6.0.0'
+  rev: '6.1.1'
   hooks:
     - id: pydocstyle
       exclude: ^(grits/tests/|grits/compounds/|setup.py|docs/)
