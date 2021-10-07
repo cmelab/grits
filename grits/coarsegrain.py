@@ -449,30 +449,33 @@ class CG_System:
                 "Please provide only one of either beads or mapping."
             )
         self.trajectory = trajectory
-        self.anchors = None
-        self.bond_map = None
         self.conversion = conversion_dict
         self.scale = scale
         self.compounds = []
 
-        if beads is not None:
-            self._set_mapping(beads, allow_overlap)
-        elif mapping is not None:
-            if not isinstance(mapping, dict):
-                with open(mapping, "r") as f:
-                    mapping = json.load(f)
-            self.mapping = mapping
+        # TODO get compounds
+        # see if compounds have matches for beads
+        # append the cg_compounds
+        # calculate the bead mappings for the entire trajectory
+
+        # if beads is not None:
+        #    self._set_mapping(beads, allow_overlap)
+        # elif mapping is not None:
+        #    if not isinstance(mapping, dict):
+        #        with open(mapping, "r") as f:
+        #            mapping = json.load(f)
+        #    self.mapping = mapping
         # self._cg_particles()
         # self._cg_bonds()
 
-    def __repr__(self):
-        """Format the CG_System representation."""
-        return (
-            f"<{self.name}: {self.n_particles} beads "
-            + f"(from {self.atomistic.n_particles} atoms), "
-            + "pos=({:.4f},{: .4f},{: .4f}), ".format(*self.pos)
-            + f"{self.n_bonds:d} bonds>"
-        )
+    # def __repr__(self):
+    #    """Format the CG_System representation."""
+    #    return (
+    #        f"<{self.name}: {self.n_particles} beads "
+    #        + f"(from {self.atomistic.n_particles} atoms), "
+    #        + "pos=({:.4f},{: .4f},{: .4f}), ".format(*self.pos)
+    #        + f"{self.n_bonds:d} bonds>"
+    #    )
 
     def _get_compounds(self):
         """Get compounds for each molecule type in the gsd trajectory."""
