@@ -413,6 +413,10 @@ class CG_System:
         User must provide only one of beads or mapping.
     allow_overlap : bool, default False,
         Whether to allow beads representing ring structures to share atoms.
+    conversion_dict : dictionary, default None
+        Dictionary to map particle types to their element.
+    scale : float, default 1.0
+        Factor by which to scale length values.
 
     Attributes
     ----------
@@ -422,17 +426,6 @@ class CG_System:
         a list of tuples of fine-grain particle indices for each bead instance::
 
             {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...], ...}
-
-    anchors : dict
-        A mapping of the anchor particle indices in each bead. Dictionary keys
-        are the bead name and the values are a set of indices::
-
-            {"_B": {0, 2, 3}, ...}
-
-    bond_map: list[tuple(str, tuple(int, int))]
-        A list of the bond types and the anchors to use for that bond::
-
-            [('_B-_S', (3, 0)), ...]
     """
 
     def __init__(
@@ -449,40 +442,31 @@ class CG_System:
                 "Please provide only one of either beads or mapping."
             )
         self.trajectory = trajectory
-        self.conversion = conversion_dict
-        self.scale = scale
-        self.compounds = []
+        self._compounds = []
+        self._inds = []
 
-        # TODO get compounds
-        # see if compounds have matches for beads
-        # append the cg_compounds
-        # calculate the bead mappings for the entire trajectory
+        if beads is not None:
+            # get compounds
+            self._get_compounds(beads, allow_overlap, scale, conversion_dict)
 
-        # if beads is not None:
-        #    self._set_mapping(beads, allow_overlap)
-        # elif mapping is not None:
-        #    if not isinstance(mapping, dict):
-        #        with open(mapping, "r") as f:
-        #            mapping = json.load(f)
-        #    self.mapping = mapping
-        # self._cg_particles()
-        # self._cg_bonds()
+            # calculate the bead mappings for the entire trajectory
+            # self._set_mapping()
+        elif mapping is not None:
+            if not isinstance(mapping, dict):
+                with open(mapping, "r") as f:
+                    mapping = json.load(f)
+            self.mapping = mapping
 
-    # def __repr__(self):
-    #    """Format the CG_System representation."""
-    #    return (
-    #        f"<{self.name}: {self.n_particles} beads "
-    #        + f"(from {self.atomistic.n_particles} atoms), "
-    #        + "pos=({:.4f},{: .4f},{: .4f}), ".format(*self.pos)
-    #        + f"{self.n_bonds:d} bonds>"
-    #    )
-
-    def _get_compounds(self):
+    def _get_compounds(self, beads, allow_overlap, scale, conversion_dict):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
         with gsd.hoomd.open(self.trajectory) as t:
             snap = t[0]
 
+        # Use the conversion dictionary to map particle type to element symbol
+        snap.particles.types = [
+            conversion_dict[i].symbol for i in snap.particles.types
+        ]
         # Break apart the snapshot into separate molecules
         molecules = snap_molecules(snap)
         mol_inds = []
@@ -496,9 +480,13 @@ class CG_System:
 
         # Convert each unique molecule to a compound
         for inds in uniq_mol_inds:
-            self.compounds.append(
-                comp_from_snapshot(snap, inds, scale=self.scale)
+            self._compounds.append(
+                CG_Compound(
+                    comp_from_snapshot(snap, inds, scale=self.scale),
+                    beads=beads,
+                )
             )
+            self._inds.append(inds)
 
     def save_mapping(self, filename=None):
         """Save the mapping operator to a json file.
