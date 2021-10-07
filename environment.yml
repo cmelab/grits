@@ -5,12 +5,11 @@ dependencies:
   - ele
   - freud
   - gsd
-  - mdtraj
-  - nglview
+  - jupyterlab
+  - mbuild
   - numpy
   - openbabel
   - pip
-  - pytest
-  - pytest-cov
-  - python=3.7
+  - py3Dmol
+  - python=3.8
   - rdkit
