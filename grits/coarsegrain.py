@@ -1,6 +1,4 @@
 """GRiTS: Coarse-graining tools."""
-__all__ = ["CG_Compound", "Bead"]
-
 import json
 import os
 import tempfile
@@ -14,7 +12,10 @@ from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
 from openbabel import pybel
 
-from grits.utils import get_bonds, has_common_member, has_number
+from grits.utils import (get_bonds, has_common_member, has_number,
+                         snap_molecules)
+
+__all__ = ["CG_Compound", "CG_System", "Bead"]
 
 
 class CG_Compound(Compound):
@@ -430,15 +431,24 @@ class CG_System:
     """
 
     def __init__(
-        self, trajectory, beads=None, mapping=None, allow_overlap=False
+        self,
+        trajectory,
+        beads=None,
+        mapping=None,
+        allow_overlap=False,
+        conversion_dict=None,
+        scale=1.0,
     ):
         if (beads is None) == (mapping is None):
             raise ValueError(
                 "Please provide only one of either beads or mapping."
             )
-        self.trajectory = gsd.hoomd.open(trajectory, "rb")
+        self.trajectory = trajectory
         self.anchors = None
         self.bond_map = None
+        self.conversion = conversion_dict
+        self.scale = scale
+        self.compounds = []
 
         if beads is not None:
             self._set_mapping(beads, allow_overlap)
@@ -447,8 +457,8 @@ class CG_System:
                 with open(mapping, "r") as f:
                     mapping = json.load(f)
             self.mapping = mapping
-        self._cg_particles()
-        self._cg_bonds()
+        # self._cg_particles()
+        # self._cg_bonds()
 
     def __repr__(self):
         """Format the CG_System representation."""
@@ -459,100 +469,28 @@ class CG_System:
             + f"{self.n_bonds:d} bonds>"
         )
 
-    def _set_mapping(self, beads, allow_overlap):
-        """Set the mapping attribute."""
-        # TODO start here
-        matches = []
-        for bead_name, smart_str in beads.items():
-            smarts = pybel.Smarts(smart_str)
-            if not smarts.findall(mol):
-                warn(f"{smart_str} not found in compound!")
-            for group in smarts.findall(mol):
-                group = tuple(i - 1 for i in group)
-                matches.append((group, smart_str, bead_name))
+    def _get_compounds(self):
+        """Get compounds for each molecule type in the gsd trajectory."""
+        # Use the first frame to find the coarse-grain mapping
+        with gsd.hoomd.open(self.trajectory) as t:
+            snap = t[0]
 
-        seen = set()
-        mapping = defaultdict(list)
-        for group, smarts, name in matches:
-            if allow_overlap:
-                # smart strings for rings can share atoms
-                # add bead regardless of whether it was seen
-                if has_number(smarts):
-                    seen.update(group)
-                    mapping[f"{name}...{smarts}"].append(group)
-                # alkyl chains should be exclusive
-                else:
-                    if has_common_member(seen, group):
-                        pass
-                    else:
-                        seen.update(group)
-                        mapping[f"{name}...{smarts}"].append(group)
-            else:
-                if has_common_member(seen, group):
-                    pass
-                else:
-                    seen.update(group)
-                    mapping[f"{name}...{smarts}"].append(group)
+        # Break apart the snapshot into separate molecules
+        molecules = snap_molecules(snap)
+        mol_inds = []
+        for i in range(max(molecules) + 1):
+            mol_inds.append(np.where(molecules == i)[0])
+        # If molecule length is different, it will be assumed to be different
+        mol_lengths = [len(i) for i in mol_inds]
+        uniq_mol_inds = []
+        for l in set(mol_lengths):
+            uniq_mol_inds.append(mol_inds[mol_lengths.index(l)])
 
-        n_atoms = mol.OBMol.NumHvyAtoms()
-        if n_atoms != len(seen):
-            warn("Some atoms have been left out of coarse-graining!")
-            # TODO make this more informative
-        self.mapping = mapping
-
-    def _cg_particles(self):
-        """Set the beads in the coarse-structure."""
-        for key, inds in self.mapping.items():
-            name, smarts = key.split("...")
-            for group in inds:
-                bead_xyz = self.atomistic.xyz[group, :]
-                avg_xyz = np.mean(bead_xyz, axis=0)
-                bead = Bead(name=name, pos=avg_xyz, smarts=smarts)
-                self.add(bead)
-
-    def _cg_bonds(self):
-        """Set the bonds in the coarse structure."""
-        bonds = get_bonds(self.atomistic)
-        bead_inds = [
-            (key.split("...")[0], group)
-            for key, inds in self.mapping.items()
-            for group in inds
-        ]
-        anchors = defaultdict(set)
-        bond_map = []
-        for i, (iname, igroup) in enumerate(bead_inds[:-1]):
-            for j, (jname, jgroup) in enumerate(bead_inds[(i + 1) :]):
-                for a, b in bonds:
-                    if a in igroup and b in jgroup:
-                        anchors[iname].add(igroup.index(a))
-                        anchors[jname].add(jgroup.index(b))
-                        bondinfo = (
-                            f"{iname}-{jname}",
-                            (igroup.index(a), jgroup.index(b)),
-                        )
-
-                    elif b in igroup and a in jgroup:
-                        anchors[iname].add(igroup.index(b))
-                        anchors[jname].add(jgroup.index(a))
-                        bondinfo = (
-                            f"{iname}-{jname}",
-                            (igroup.index(b), jgroup.index(a)),
-                        )
-                    else:
-                        continue
-                    if bondinfo not in bond_map:
-                        # If the bond is between two beads of the same type,
-                        # add it to the end
-                        if iname == jname:
-                            bond_map.append(bondinfo)
-                        # Otherwise add it to the beginning
-                        else:
-                            bond_map.insert(0, bondinfo)
-
-                    self.add_bond([self[i], self[j + i + 1]])
-        if anchors and bond_map:
-            self.anchors = anchors
-            self.bond_map = bond_map
+        # Convert each unique molecule to a compound
+        for inds in uniq_mol_inds:
+            self.compounds.append(
+                comp_from_snapshot(snap, inds, scale=self.scale)
+            )
 
     def save_mapping(self, filename=None):
         """Save the mapping operator to a json file.
@@ -575,139 +513,3 @@ class CG_System:
             json.dump(self.mapping, f)
         print(f"Mapping saved to {filename}")
         return filename
-
-    def visualize(
-        self, show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
-    ):  # pragma: no cover
-        """Visualize the Compound using py3dmol.
-
-        Allows for visualization of a Compound within a Jupyter Notebook.
-        Modified to from :py:meth:`mbuild.Compound.visualize` to show atomistic
-        elements (translucent) with larger CG beads.
-
-        Parameters
-        ----------
-        show_ports : bool, default False
-            Visualize Ports in addition to Particles
-        color_scheme : dict, default {}
-            Specify coloring for non-elemental particles keys are strings of
-            the particle names values are strings of the colors::
-
-                {'_CGBEAD': 'blue'}
-
-        show_atomistic : bool, default False
-            Show the atomistic structure stored in
-            :py:attr:`CG_Compound.atomistic`
-        scale : float, default 1.0
-            Scaling factor to modify the size of objects in the view.
-
-        Returns
-        -------
-        view : py3Dmol.view
-        """
-        if not run_from_ipython():
-            raise RuntimeError(
-                "Visualization is only supported in Jupyter Notebooks."
-            )
-        import py3Dmol
-
-        atom_names = []
-
-        if self.atomistic is not None and show_atomistic:
-            atomistic = clone(self.atomistic)
-            for particle in atomistic:
-                if not particle.name:
-                    particle.name = "UNK"
-                else:
-                    if particle.name not in ("Compound", "CG_Compound"):
-                        atom_names.append(particle.name)
-
-        coarse = clone(self)
-        modified_color_scheme = {}
-        for name, color in color_scheme.items():
-            # Py3dmol does some element string conversions,
-            # first character is as-is, rest of the characters are lowercase
-            new_name = name[0] + name[1:].lower()
-            modified_color_scheme[new_name] = color
-            modified_color_scheme[name] = color
-
-        cg_names = []
-        for particle in coarse:
-            if not particle.name:
-                particle.name = "UNK"
-            else:
-                if particle.name not in ("Compound", "CG_Compound"):
-                    cg_names.append(particle.name)
-
-        tmp_dir = tempfile.mkdtemp()
-
-        view = py3Dmol.view()
-
-        if atom_names:
-            atomistic.save(
-                os.path.join(tmp_dir, "atomistic_tmp.mol2"),
-                show_ports=show_ports,
-                overwrite=True,
-            )
-
-            # atomistic
-            with open(os.path.join(tmp_dir, "atomistic_tmp.mol2"), "r") as f:
-                view.addModel(f.read(), "mol2", keepH=True)
-
-            if cg_names:
-                opacity = 0.6
-            else:
-                opacity = 1.0
-
-            view.setStyle(
-                {
-                    "stick": {
-                        "radius": 0.2 * scale,
-                        "opacity": opacity,
-                        "color": "grey",
-                    },
-                    "sphere": {
-                        "scale": 0.3 * scale,
-                        "opacity": opacity,
-                        "colorscheme": modified_color_scheme,
-                    },
-                }
-            )
-
-        # coarse
-        if cg_names:
-            # silence warning about No element found for CG bead
-            with catch_warnings():
-                simplefilter("ignore")
-                coarse.save(
-                    os.path.join(tmp_dir, "coarse_tmp.mol2"),
-                    show_ports=show_ports,
-                    overwrite=True,
-                )
-            with open(os.path.join(tmp_dir, "coarse_tmp.mol2"), "r") as f:
-                view.addModel(f.read(), "mol2", keepH=True)
-
-            if self.atomistic is None:
-                scale = 0.3 * scale
-            else:
-                scale = 0.7 * scale
-
-            view.setStyle(
-                {"atom": cg_names},
-                {
-                    "stick": {
-                        "radius": 0.2 * scale,
-                        "opacity": 1,
-                        "color": "grey",
-                    },
-                    "sphere": {
-                        "scale": scale,
-                        "opacity": 1,
-                        "colorscheme": modified_color_scheme,
-                    },
-                },
-            )
-
-        view.zoomTo()
-
-        return view
