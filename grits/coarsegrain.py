@@ -12,8 +12,13 @@ from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
 from openbabel import pybel
 
-from grits.utils import (get_bonds, has_common_member, has_number,
-                         snap_molecules)
+from grits.utils import (
+    comp_from_snapshot,
+    get_bonds,
+    has_common_member,
+    has_number,
+    snap_molecules,
+)
 
 __all__ = ["CG_Compound", "CG_System", "Bead"]
 
