@@ -495,7 +495,15 @@ class CG_System:
     def _set_mapping(self):
         """Scale the mapping from each compound to the entire trajectory."""
         self.mapping = {}
+        self.bond_arrays = []
         for comp, inds in zip(system._compounds, system._inds):
+            p = {p: i for i, p in enumerate(comp.particles())}
+            self.bond_arrays.append(
+                [
+                    (p[i], p[j]) if p[i] < p[j] else (p[j], p[i])
+                    for (i, j) in comp.bonds()
+                ]
+            )
             for k, v in comp.mapping.items():
                 self.mapping[k] = [i[list(g)] for i in inds for g in v]
 
