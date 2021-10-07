@@ -391,7 +391,7 @@ class CG_System:
 
     Parameters
     ----------
-    trajectory : path
+    gsdfile : path
         Path to a gsd file.
     beads : dict, default None
         Dictionary with keys containing desired bead name and values containing
@@ -429,7 +429,7 @@ class CG_System:
 
     def __init__(
         self,
-        trajectory,
+        gsdfile,
         beads=None,
         mapping=None,
         allow_overlap=False,
@@ -440,7 +440,7 @@ class CG_System:
             raise ValueError(
                 "Please provide only one of either beads or mapping."
             )
-        self.trajectory = trajectory
+        self.gsdfile = gsdfile
         self._compounds = []
         self._inds = []
 
@@ -459,7 +459,7 @@ class CG_System:
     def _get_compounds(self, beads, allow_overlap, scale, conversion_dict):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
-        with gsd.hoomd.open(self.trajectory) as t:
+        with gsd.hoomd.open(self.gsdfile) as t:
             snap = t[0]
 
         # Use the conversion dictionary to map particle type to element symbol
@@ -493,6 +493,7 @@ class CG_System:
             )
 
     def _set_mapping(self):
+        """Scale the mapping from each compound to the entire trajectory."""
         self.mapping = {}
         for comp, inds in zip(system._compounds, system._inds):
             for k, v in comp.mapping.items():
@@ -519,3 +520,7 @@ class CG_System:
             json.dump(self.mapping, f)
         print(f"Mapping saved to {filename}")
         return filename
+
+    # TODO
+    # def save
+    # write a function that saves a coarse grain trajectory
