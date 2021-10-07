@@ -449,7 +449,7 @@ class CG_System:
             self._get_compounds(beads, allow_overlap, scale, conversion_dict)
 
             # calculate the bead mappings for the entire trajectory
-            # self._set_mapping()
+            self._set_mapping()
         elif mapping is not None:
             if not isinstance(mapping, dict):
                 with open(mapping, "r") as f:
@@ -472,6 +472,7 @@ class CG_System:
         mol_inds = []
         for i in range(max(molecules) + 1):
             mol_inds.append(np.where(molecules == i)[0])
+
         # If molecule length is different, it will be assumed to be different
         mol_lengths = [len(i) for i in mol_inds]
         uniq_mol_inds = []
@@ -480,13 +481,22 @@ class CG_System:
 
         # Convert each unique molecule to a compound
         for inds in uniq_mol_inds:
+            l = len(inds)
             self._compounds.append(
                 CG_Compound(
                     comp_from_snapshot(snap, inds, scale=scale),
                     beads=beads,
                 )
             )
-            self._inds.append(inds)
+            self._inds.append(
+                [mol_inds[i] for i in np.where(np.array(mol_lengths) == l)[0]]
+            )
+
+    def _set_mapping(self):
+        self.mapping = {}
+        for comp, inds in zip(system._compounds, system._inds):
+            for k, v in comp.mapping.items():
+                self.mapping[k] = [i[list(g)] for i in inds for g in v]
 
     def save_mapping(self, filename=None):
         """Save the mapping operator to a json file.
