@@ -1,6 +1,7 @@
 """Utility functions for GRiTS."""
 import re
 
+import ele
 import freud
 import numpy as np
 from ele import element_from_symbol
@@ -53,7 +54,7 @@ def comp_from_snapshot(snapshot, indices, scale=1.0):
             particle_dict[i] = atom
 
     # Add bonds
-    for i, j in snap.bonds.group:
+    for i, j in snapshot.bonds.group:
         if i in indices and j in indices:
             comp.add_bond([particle_dict[i], particle_dict[j]])
     return comp

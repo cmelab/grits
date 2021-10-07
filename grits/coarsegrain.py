@@ -5,7 +5,6 @@ import tempfile
 from collections import defaultdict
 from warnings import catch_warnings, simplefilter, warn
 
-import gsd
 import gsd.hoomd
 import numpy as np
 from mbuild import Compound, clone
@@ -464,9 +463,10 @@ class CG_System:
             snap = t[0]
 
         # Use the conversion dictionary to map particle type to element symbol
-        snap.particles.types = [
-            conversion_dict[i].symbol for i in snap.particles.types
-        ]
+        if conversion_dict is not None:
+            snap.particles.types = [
+                conversion_dict[i].symbol for i in snap.particles.types
+            ]
         # Break apart the snapshot into separate molecules
         molecules = snap_molecules(snap)
         mol_inds = []
@@ -482,7 +482,7 @@ class CG_System:
         for inds in uniq_mol_inds:
             self._compounds.append(
                 CG_Compound(
-                    comp_from_snapshot(snap, inds, scale=self.scale),
+                    comp_from_snapshot(snap, inds, scale=scale),
                     beads=beads,
                 )
             )
