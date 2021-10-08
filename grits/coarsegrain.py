@@ -551,7 +551,7 @@ class CG_System:
         print(f"Mapping saved to {filename}")
         return filename
 
-    def save(cg_gsdfile, start=0, stop=-1):
+    def save(self, cg_gsdfile, start=0, stop=-1):
         """Save the coarse-grain system to a gsd file.
 
         Does not calculate the image of the coarse-grain bead.
