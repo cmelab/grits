@@ -494,20 +494,40 @@ class CG_System:
 
     def _set_mapping(self):
         """Scale the mapping from each compound to the entire trajectory."""
+
+        def shift_value(i):
+            n_before, n_bead = order[types[i]]
+            return n_comps * n_before + (i - n_before) + comp_idx * n_bead
+
+        v_shift = np.vectorize(shift_value)
+
         self.mapping = {}
-        self.bond_arrays = []
-        for comp, inds in zip(system._compounds, system._inds):
-            p = {p: i for i, p in enumerate(comp.particles())}
-            self.bond_arrays.append(
-                np.array(
-                    [
-                        (p[i], p[j]) if p[i] < p[j] else (p[j], p[i])
-                        for (i, j) in comp.bonds()
-                    ]
-                )
-            )
+        all_bonds = []
+        particle_count = 0
+        for comp, inds in zip(self._compounds, self._inds):
+            # Map particles
             for k, v in comp.mapping.items():
                 self.mapping[k] = [i[list(g)] for i in inds for g in v]
+
+            # Map bonds
+            p = {p: i for i, p in enumerate(comp.particles())}
+            bond_array = np.array(
+                [
+                    (p[i], p[j]) if p[i] < p[j] else (p[j], p[i])
+                    for (i, j) in comp.bonds()
+                ]
+            )
+            types = [p.name for p in comp.particles()]
+            order = {i: (types.index(i), types.count(i)) for i in set(types)}
+            n_comps = len(inds)
+            comp_bonds = []
+            for comp_idx in range(n_comps):
+                comp_bonds.append(v_shift(bond_array))
+            all_bonds += comp_bonds
+            particle_count += n_comps * len(types)
+
+        all_bond_array = np.vstack(all_bonds)
+        self._bond_array = all_bond_array[all_bond_array[:, 0].argsort()]
 
     def save_mapping(self, filename=None):
         """Save the mapping operator to a json file.
@@ -531,6 +551,51 @@ class CG_System:
         print(f"Mapping saved to {filename}")
         return filename
 
-    # TODO
-    # def save
-    # write a function that saves a coarse grain trajectory
+    def save(cg_gsdfile, start=0, stop=-1):
+        """Save the coarse-grain system to a gsd file.
+
+        Does not calculate the image of the coarse-grain bead.
+
+        Retains:
+            - configuration: box, step
+            - particles: N, position, typeid, types
+            - bonds: N, group
+
+        Parameters
+        ----------
+        cg_gsdfile : str
+            Filename for new gsd file. If file already exists, it will be
+            overwritten.
+        start : int, default 0
+            Where to start reading the gsd trajectory the system was created
+            with.
+        stop : int, default -1
+            Where to stop reading the gsd trajectory the system was created
+            with.
+        """
+        with gsd.hoomd.open(cg_gsdfile, "wb") as new, gsd.hoomd.open(
+            self.gsdfile, "rb"
+        ) as old:
+            for s in old[start:stop]:
+                new_snap = gsd.hoomd.Snapshot()
+                position = []
+                types = [i.split("...")[0] for i in self.mapping]
+                typeid = []
+                for i, inds in enumerate(self.mapping.values()):
+                    typeid.append(np.ones(len(inds)) * i)
+                    position += [
+                        np.mean(s.particles.position[i], axis=0) for i in inds
+                    ]
+
+                position = np.vstack(position)
+                typeid = np.hstack(typeid)
+
+                new_snap.configuration.box = s.configuration.box
+                new_snap.configuration.step = s.configuration.step
+                new_snap.particles.N = len(typeid)
+                new_snap.particles.position = position
+                new_snap.particles.typeid = typeid
+                new_snap.particles.types = types
+                new_snap.bonds.N = self._bond_array.shape[0]
+                new_snap.bonds.group = self._bond_array
+                new.append(new_snap)
