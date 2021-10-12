@@ -1,6 +1,8 @@
 import tempfile
 from os import path
 
+import gsd.hoomd
+import numpy as np
 import pytest
 from base_test import BaseTest
 
@@ -97,6 +99,11 @@ class Test_CGCompound(BaseTest):
 
 
 class Test_CGSystem(BaseTest):
+    def test_raises(self):
+        gsdfile = path.join(asset_dir, "p3ht.gsd")
+        with pytest.raises(ValueError):
+            CG_System(gsdfile)
+
     def test_p3ht(self, tmp_path):
         gsdfile = path.join(asset_dir, "p3ht.gsd")
         system = CG_System(
@@ -130,3 +137,23 @@ class Test_CGSystem(BaseTest):
 
         cg_json = tmp_path / "cg-itic-p3ht.json"
         system.save_mapping(cg_json)
+
+        map_system = CG_System(
+            gsdfile,
+            mapping=cg_json,
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(map_system.mapping, dict)
+        assert (
+            len(map_system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+        )
+
+        map_cg_gsd = tmp_path / "map-cg-itic-p3ht.gsd"
+        system.save(map_cg_gsd)
+
+        with gsd.hoomd.open(map_cg_gsd) as t_map, gsd.hoomd.open(cg_gsd) as t:
+            map_s = t_map[0]
+            s = t[0]
+            assert s.particles.N == 170
+            assert np.all(s.particles.position == map_s.particles.position)
