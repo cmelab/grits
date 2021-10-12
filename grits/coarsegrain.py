@@ -497,13 +497,18 @@ class CG_System:
 
         def shift_value(i):
             n_before, n_bead = order[types[i]]
-            return n_comps * n_before + (i - n_before) + comp_idx * n_bead
+            return (
+                n_comps * n_before
+                + (i - n_before)
+                + comp_idx * n_bead
+                + bead_count
+            )
 
         v_shift = np.vectorize(shift_value)
 
         self.mapping = {}
         all_bonds = []
-        particle_count = 0
+        bead_count = 0
         for comp, inds in zip(self._compounds, self._inds):
             # Map particles
             for k, v in comp.mapping.items():
@@ -517,17 +522,25 @@ class CG_System:
                     for (i, j) in comp.bonds()
                 ]
             )
-            types = [p.name for p in comp.particles()]
-            order = {i: (types.index(i), types.count(i)) for i in set(types)}
-            n_comps = len(inds)
-            comp_bonds = []
-            for comp_idx in range(n_comps):
-                comp_bonds.append(v_shift(bond_array))
-            all_bonds += comp_bonds
-            particle_count += n_comps * len(types)
 
-        all_bond_array = np.vstack(all_bonds)
-        self._bond_array = all_bond_array[all_bond_array[:, 0].argsort()]
+            types = [p.name for p in comp.particles()]
+            n_comps = len(inds)
+            # Check that bond array exists
+            if bond_array.size > 0:
+                order = {
+                    i: (types.index(i), types.count(i)) for i in set(types)
+                }
+                comp_bonds = []
+                for comp_idx in range(n_comps):
+                    comp_bonds.append(v_shift(bond_array))
+                all_bonds += comp_bonds
+            bead_count += n_comps * len(types)
+
+        if all_bonds:
+            all_bond_array = np.vstack(all_bonds)
+            self._bond_array = all_bond_array[all_bond_array[:, 0].argsort()]
+        else:
+            self._bond_array = None
 
     def save_mapping(self, filename=None):
         """Save the mapping operator to a json file.
@@ -596,6 +609,7 @@ class CG_System:
                 new_snap.particles.position = position
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
-                new_snap.bonds.N = self._bond_array.shape[0]
-                new_snap.bonds.group = self._bond_array
+                if self._bond_array is not None:
+                    new_snap.bonds.N = self._bond_array.shape[0]
+                    new_snap.bonds.group = self._bond_array
                 new.append(new_snap)
