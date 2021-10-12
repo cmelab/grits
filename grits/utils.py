@@ -1,4 +1,5 @@
 """Utility functions for GRiTS."""
+import json
 import re
 
 import ele
@@ -7,6 +8,21 @@ import numpy as np
 from ele import element_from_symbol
 from mbuild.box import Box
 from mbuild.compound import Compound, Particle
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """Serializer for numpy objects."""
+
+    def default(self, obj):
+        """Overwrite the default for numpy arrays and data types."""
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NumpyEncoder, self).default(obj)
 
 
 def comp_from_snapshot(snapshot, indices, scale=1.0):
