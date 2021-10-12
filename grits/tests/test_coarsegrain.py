@@ -1,7 +1,12 @@
+import tempfile
+from os import path
+
 import pytest
 from base_test import BaseTest
 
-from grits import CG_Compound
+from grits import CG_Compound, CG_System
+
+asset_dir = path.join(path.dirname(__file__), "assets")
 
 
 class Test_CGCompound(BaseTest):
@@ -88,3 +93,41 @@ class Test_CGCompound(BaseTest):
     def test_reprnoerror(self, cg_methane, cg_p3ht):
         str(cg_p3ht)
         str(cg_methane)
+
+
+class Test_CGSystem(BaseTest):
+    from grits.utils import amber_dict
+
+    def test_p3ht(self, tmp_path):
+        gsdfile = path.join(asset_dir, "p3ht.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1cscc1", "_S": "CCC"},
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_B...c1cscc1"]) == 10
+
+        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        system.save(cg_gsd)
+
+        cg_json = tmp_path / "cg-p3ht.json"
+        system.save_mapping(cg_json)
+
+    def test_iticp3ht(self):
+        gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_A": "c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5", "_B": "c1cscc1"},
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+
+        cg_gsd = tmp_path / "cg-itic-p3ht.gsd"
+        system.save(cg_gsd)
+
+        cg_json = tmp_path / "cg-itic-p3ht.json"
+        system.save_mapping(cg_json)
