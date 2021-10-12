@@ -5,6 +5,7 @@ import pytest
 from base_test import BaseTest
 
 from grits import CG_Compound, CG_System
+from grits.utils import amber_dict
 
 asset_dir = path.join(path.dirname(__file__), "assets")
 
@@ -96,8 +97,6 @@ class Test_CGCompound(BaseTest):
 
 
 class Test_CGSystem(BaseTest):
-    from grits.utils import amber_dict
-
     def test_p3ht(self, tmp_path):
         gsdfile = path.join(asset_dir, "p3ht.gsd")
         system = CG_System(
