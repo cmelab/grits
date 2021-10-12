@@ -13,6 +13,7 @@ from mbuild.utils.io import run_from_ipython
 from openbabel import pybel
 
 from grits.utils import (
+    NumpyEncoder,
     comp_from_snapshot,
     get_bonds,
     has_common_member,
@@ -543,29 +544,19 @@ class CG_System:
         else:
             self._bond_array = None
 
-    def save_mapping(self, filename=None):
+    def save_mapping(self, filename):
         """Save the mapping operator to a json file.
 
         Parameters
         ----------
-        filename : str, default None
+        filename : str
             Filename where the mapping operator will be saved in json format.
-            If None is provided, the filename will be CG_Compound.name +
-            "_mapping.json".
-
-        Returns
-        -------
-        str
-            Path to saved mapping
         """
-        if filename is None:
-            filename = f"{self.name}_mapping.json"
         with open(filename, "w") as f:
-            json.dump(self.mapping, f)
+            json.dump(self.mapping, f, cls=NumpyEncoder)
         print(f"Mapping saved to {filename}")
-        return filename
 
-    def save(self, cg_gsdfile, start=0, stop=-1):
+    def save(self, cg_gsdfile, start=0, stop=None):
         """Save the coarse-grain system to a gsd file.
 
         Does not calculate the image of the coarse-grain bead.
@@ -583,13 +574,15 @@ class CG_System:
         start : int, default 0
             Where to start reading the gsd trajectory the system was created
             with.
-        stop : int, default -1
+        stop : int, default None
             Where to stop reading the gsd trajectory the system was created
-            with.
+            with. If None, will stop at the last frame.
         """
         with gsd.hoomd.open(cg_gsdfile, "wb") as new, gsd.hoomd.open(
             self.gsdfile, "rb"
         ) as old:
+            if stop is None:
+                stop = len(old)
             for s in old[start:stop]:
                 new_snap = gsd.hoomd.Snapshot()
                 position = []
