@@ -106,7 +106,7 @@ class Test_CGSystem(BaseTest):
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1cscc1"]) == 10
+        assert len(system.mapping["_B...c1cscc1"]) == 160
 
         cg_gsd = tmp_path / "cg-p3ht.gsd"
         system.save(cg_gsd)
@@ -114,7 +114,7 @@ class Test_CGSystem(BaseTest):
         cg_json = tmp_path / "cg-p3ht.json"
         system.save_mapping(cg_json)
 
-    def test_iticp3ht(self):
+    def test_iticp3ht(self, tmp_path):
         gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
         system = CG_System(
             gsdfile,
