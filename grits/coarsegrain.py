@@ -5,6 +5,7 @@ import tempfile
 from collections import defaultdict
 from warnings import catch_warnings, simplefilter, warn
 
+import freud
 import gsd.hoomd
 import numpy as np
 from mbuild import Compound, clone
@@ -592,21 +593,26 @@ class CG_System:
             for s in old[start:stop]:
                 new_snap = gsd.hoomd.Snapshot()
                 position = []
+                f_box = freud.Box.from_box(s.configuration.box)
+                unwrap_pos = f_box.unwrap(
+                    s.particles.position, s.particles.image
+                )
                 types = [i.split("...")[0] for i in self.mapping]
                 typeid = []
                 for i, inds in enumerate(self.mapping.values()):
                     typeid.append(np.ones(len(inds)) * i)
-                    position += [
-                        np.mean(s.particles.position[i], axis=0) for i in inds
-                    ]
+                    position += [np.mean(unwrap_pos[i], axis=0) for i in inds]
 
                 position = np.vstack(position)
+                images = f_box.get_images(position)
+                position = f_box.wrap(position)
                 typeid = np.hstack(typeid)
 
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
                 new_snap.particles.N = len(typeid)
                 new_snap.particles.position = position
+                new_snap.particles.image = images
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
                 if self._bond_array is not None:
