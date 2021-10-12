@@ -48,7 +48,7 @@ class CG_Compound(Compound):
         keys contain desired bead name and SMARTS string specification of that
         bead and values containing list of tuples of atom indices::
 
-            mapping = {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...]}
+            mapping = {"_B...c1sccc1": [(0, 4, 3, 2, 1), ...]}
 
         User must provide only one of beads or mapping.
     allow_overlap : bool, default False,
@@ -63,7 +63,7 @@ class CG_Compound(Compound):
         the bead name and SMARTS string (separated by "..."), and the values are
         a list of tuples of fine-grain particle indices for each bead instance::
 
-            {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...], ...}
+            {"_B...c1sccc1": [(0, 4, 3, 2, 1), ...], ...}
 
     anchors : dict
         A mapping of the anchor particle indices in each bead. Dictionary keys
@@ -407,11 +407,12 @@ class CG_System:
     mapping : dict or path, default None
         Either a dictionary or path to a json file of a dictionary. Dictionary
         keys contain desired bead name and SMARTS string specification of that
-        bead and values containing list of tuples of atom indices::
+        bead and values containing list of lists of atom indices::
 
-            mapping = {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...]}
+            mapping = {"_B...c1sccc1": [[0, 4, 3, 2, 1], ...]}
 
         User must provide only one of beads or mapping.
+        If a mapping is provided, the bonding between the beads will not be set.
     allow_overlap : bool, default False,
         Whether to allow beads representing ring structures to share atoms.
     conversion_dict : dictionary, default None
@@ -424,9 +425,10 @@ class CG_System:
     mapping : dict
         A mapping from atomistic to coarse-grain structure. Dictionary keys are
         the bead name and SMARTS string (separated by "..."), and the values are
-        a list of tuples of fine-grain particle indices for each bead instance::
+        a list of numpy arrays of fine-grain particle indices for each bead
+        instance::
 
-            {"_B...c1sccc1"): [(0, 4, 3, 2, 1), ...], ...}
+            {"_B...c1sccc1": [np.array([0, 4, 3, 2, 1]), ...], ...}
     """
 
     def __init__(
@@ -445,6 +447,7 @@ class CG_System:
         self.gsdfile = gsdfile
         self._compounds = []
         self._inds = []
+        self._bond_array = None
 
         if beads is not None:
             # get compounds
@@ -541,8 +544,6 @@ class CG_System:
         if all_bonds:
             all_bond_array = np.vstack(all_bonds)
             self._bond_array = all_bond_array[all_bond_array[:, 0].argsort()]
-        else:
-            self._bond_array = None
 
     def save_mapping(self, filename):
         """Save the mapping operator to a json file.
