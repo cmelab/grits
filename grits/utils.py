@@ -1,7 +1,96 @@
 """Utility functions for GRiTS."""
+import json
 import re
 
+import ele
+import freud
 import numpy as np
+from ele import element_from_symbol
+from mbuild.box import Box
+from mbuild.compound import Compound, Particle
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """Serializer for numpy objects."""
+
+    def default(self, obj):
+        """Overwrite the default for numpy arrays and data types."""
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NumpyEncoder, self).default(obj)
+
+
+def comp_from_snapshot(snapshot, indices, scale=1.0):
+    """Convert particles by indices from a Snapshot to a Compound.
+
+    Parameters
+    ----------
+    snapshot : gsd.hoomd.Snapshot
+        Snapshot from which to build the mbuild Compound.
+    indices : np.ndarray
+        Indices of the particles to be added to the compound.
+    scale : float, default 1.0
+        Value by which to scale the length values
+
+    Returns
+    -------
+    comp : mbuild.Compound
+
+    Note
+    ----
+    GSD snapshots center their boxes on the origin (0,0,0), so the compound is
+    shifted by half the box lengths
+    """
+    comp = Compound()
+    bond_array = snapshot.bonds.group
+    n_atoms = snapshot.particles.N
+
+    # gsd / hoomd v3
+    box = np.asarray(snapshot.configuration.box)
+    comp.box = Box.from_lengths_tilt_factors(
+        lengths=box[:3] * scale, tilt_factors=box[3:]
+    )
+
+    # GSD and HOOMD snapshots center their boxes on the origin (0,0,0)
+    shift = np.array(comp.box.lengths) / 2
+    particle_dict = {}
+    # Add particles
+    for i in range(n_atoms):
+        if i in indices:
+            name = snapshot.particles.types[snapshot.particles.typeid[i]]
+            xyz = snapshot.particles.position[i] * scale + shift
+
+            atom = Particle(name=name, pos=xyz)
+            comp.add(atom, label=str(i))
+            particle_dict[i] = atom
+
+    # Add bonds
+    for i, j in snapshot.bonds.group:
+        if i in indices and j in indices:
+            comp.add_bond([particle_dict[i], particle_dict[j]])
+    return comp
+
+
+def snap_molecules(snap):
+    """Get the molecule indices based on bonding in a gsd.hoomd.Snapshot."""
+    system = freud.AABBQuery.from_system(snap)
+    n_query_points = n_points = snap.particles.N
+    query_point_indices = snap.bonds.group[:, 0]
+    point_indices = snap.bonds.group[:, 1]
+    distances = system.box.compute_distances(
+        system.points[query_point_indices], system.points[point_indices]
+    )
+    nlist = freud.NeighborList.from_arrays(
+        n_query_points, n_points, query_point_indices, point_indices, distances
+    )
+    cluster = freud.cluster.Cluster()
+    cluster.compute(system=system, neighbors=nlist)
+    return cluster.cluster_idx
 
 
 def align(compound, particle, towards_compound, around=None):
@@ -200,3 +289,77 @@ def num2str(num):
     if num < 26:
         return chr(num + 65)
     return "".join([chr(num // 26 + 64), chr(num % 26 + 65)])
+
+
+amber_dict = {
+    "c": ele.element_from_symbol("C"),
+    "c1": ele.element_from_symbol("C"),
+    "c2": ele.element_from_symbol("C"),
+    "c3": ele.element_from_symbol("C"),
+    "ca": ele.element_from_symbol("C"),
+    "cp": ele.element_from_symbol("C"),
+    "cq": ele.element_from_symbol("C"),
+    "cc": ele.element_from_symbol("C"),
+    "cd": ele.element_from_symbol("C"),
+    "ce": ele.element_from_symbol("C"),
+    "cf": ele.element_from_symbol("C"),
+    "cg": ele.element_from_symbol("C"),
+    "ch": ele.element_from_symbol("C"),
+    "cx": ele.element_from_symbol("C"),
+    "cy": ele.element_from_symbol("C"),
+    "cu": ele.element_from_symbol("C"),
+    "cv": ele.element_from_symbol("C"),
+    "h1": ele.element_from_symbol("H"),
+    "h2": ele.element_from_symbol("H"),
+    "h3": ele.element_from_symbol("H"),
+    "h4": ele.element_from_symbol("H"),
+    "h5": ele.element_from_symbol("H"),
+    "ha": ele.element_from_symbol("H"),
+    "hc": ele.element_from_symbol("H"),
+    "hn": ele.element_from_symbol("H"),
+    "ho": ele.element_from_symbol("H"),
+    "hp": ele.element_from_symbol("H"),
+    "hs": ele.element_from_symbol("H"),
+    "hw": ele.element_from_symbol("H"),
+    "hx": ele.element_from_symbol("H"),
+    "f": ele.element_from_symbol("F"),
+    "cl": ele.element_from_symbol("Cl"),
+    "br": ele.element_from_symbol("Br"),
+    "i": ele.element_from_symbol("I"),
+    "n": ele.element_from_symbol("N"),
+    "n1": ele.element_from_symbol("N"),
+    "n2": ele.element_from_symbol("N"),
+    "n3": ele.element_from_symbol("N"),
+    "n4": ele.element_from_symbol("N"),
+    "na": ele.element_from_symbol("N"),
+    "nb": ele.element_from_symbol("N"),
+    "nc": ele.element_from_symbol("N"),
+    "nd": ele.element_from_symbol("N"),
+    "ne": ele.element_from_symbol("N"),
+    "nf": ele.element_from_symbol("N"),
+    "nh": ele.element_from_symbol("N"),
+    "no": ele.element_from_symbol("N"),
+    "o": ele.element_from_symbol("O"),
+    "oh": ele.element_from_symbol("O"),
+    "os": ele.element_from_symbol("O"),
+    "ow": ele.element_from_symbol("O"),
+    "p2": ele.element_from_symbol("P"),
+    "p3": ele.element_from_symbol("P"),
+    "p4": ele.element_from_symbol("P"),
+    "p5": ele.element_from_symbol("P"),
+    "pb": ele.element_from_symbol("P"),
+    "pc": ele.element_from_symbol("P"),
+    "pd": ele.element_from_symbol("P"),
+    "pe": ele.element_from_symbol("P"),
+    "pf": ele.element_from_symbol("P"),
+    "px": ele.element_from_symbol("P"),
+    "py": ele.element_from_symbol("P"),
+    "s": ele.element_from_symbol("S"),
+    "s2": ele.element_from_symbol("S"),
+    "s4": ele.element_from_symbol("S"),
+    "s6": ele.element_from_symbol("S"),
+    "sh": ele.element_from_symbol("S"),
+    "ss": ele.element_from_symbol("S"),
+    "sx": ele.element_from_symbol("S"),
+    "sy": ele.element_from_symbol("S"),
+}
