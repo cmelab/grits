@@ -51,8 +51,10 @@ class CG_Compound(Compound):
             mapping = {"_B...c1sccc1": [(0, 4, 3, 2, 1), ...]}
 
         User must provide only one of beads or mapping.
-    allow_overlap : bool, default False,
+    allow_overlap : bool, default False
         Whether to allow beads representing ring structures to share atoms.
+    add_hydrogens : bool, default False
+        Whether to add hydrogens. Useful for united-atom models.
 
     Attributes
     ----------
@@ -78,7 +80,13 @@ class CG_Compound(Compound):
     """
 
     def __init__(
-        self, compound, beads=None, mapping=None, allow_overlap=False, **kwargs
+        self,
+        compound,
+        beads=None,
+        mapping=None,
+        allow_overlap=False,
+        add_hydrogens=False,
+        **kwargs,
     ):
         super(CG_Compound, self).__init__(**kwargs)
         if (beads is None) == (mapping is None):
@@ -92,6 +100,12 @@ class CG_Compound(Compound):
         if beads is not None:
             mol = compound.to_pybel()
             mol.OBMol.PerceiveBondOrders()
+            if add_hydrogens:
+                for i in mol:
+                    valence = i.OBAtom.GetExplicitValence()
+                    degree = i.OBAtom.GetExplicitDegree()
+                    i.OBAtom.SetImplicitHCount(valence - degree)
+                mol.addh()
 
             self._set_mapping(beads, mol, allow_overlap)
         elif mapping is not None:
@@ -419,6 +433,8 @@ class CG_System:
         Dictionary to map particle types to their element.
     scale : float, default 1.0
         Factor by which to scale length values.
+    add_hydrogens : bool, default False
+        Whether to add hydrogens. Useful for united-atom models.
 
     Attributes
     ----------
@@ -439,6 +455,7 @@ class CG_System:
         allow_overlap=False,
         conversion_dict=None,
         scale=1.0,
+        add_hydrogens=False,
     ):
         if (beads is None) == (mapping is None):
             raise ValueError(
@@ -451,7 +468,9 @@ class CG_System:
 
         if beads is not None:
             # get compounds
-            self._get_compounds(beads, allow_overlap, scale, conversion_dict)
+            self._get_compounds(
+                beads, allow_overlap, scale, conversion_dict, add_hydrogens
+            )
 
             # calculate the bead mappings for the entire trajectory
             self._set_mapping()
@@ -461,7 +480,9 @@ class CG_System:
                     mapping = json.load(f)
             self.mapping = mapping
 
-    def _get_compounds(self, beads, allow_overlap, scale, conversion_dict):
+    def _get_compounds(
+        self, beads, allow_overlap, scale, conversion_dict, add_hydrogens
+    ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
         with gsd.hoomd.open(self.gsdfile) as t:
@@ -491,6 +512,7 @@ class CG_System:
                 CG_Compound(
                     comp_from_snapshot(snap, inds, scale=scale),
                     beads=beads,
+                    add_hydrogens=add_hydrogens,
                 )
             )
             self._inds.append(
