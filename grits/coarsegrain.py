@@ -109,10 +109,10 @@ class CG_Compound(Compound):
                 mol.write(format="mol2", filename="test.mol2", overwrite=True)
                 mol = list(pybel.readfile("mol2", "test.mol2"))[0]
 
-                for i in mol:
-                    valence = i.OBAtom.GetExplicitValence()
-                    degree = i.OBAtom.GetExplicitDegree()
-                    i.OBAtom.SetImplicitHCount(valence - degree)
+                # for i in mol:
+                #    valence = i.OBAtom.GetExplicitValence()
+                #    degree = i.OBAtom.GetExplicitDegree()
+                #    i.OBAtom.SetImplicitHCount(valence - degree)
                 mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
                 print(f"Added {n_atoms2-n_atoms} hydrogens.")
