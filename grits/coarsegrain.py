@@ -105,7 +105,7 @@ class CG_Compound(Compound):
                 # This is a goofy work around necessary for the aromaticity
                 # to be set correctly.
                 with tempfile.NamedTemporaryFile() as f:
-                    mol.write(format="mol2", filename=f.name)
+                    mol.write(format="mol2", filename=f.name, overwrite=True)
                     mol = list(pybel.readfile("mol2", f.name))[0]
 
                 for i in mol:
