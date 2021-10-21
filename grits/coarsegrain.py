@@ -104,15 +104,10 @@ class CG_Compound(Compound):
                 n_atoms = mol.OBMol.NumAtoms()
                 # This is a goofy work around necessary for the aromaticity
                 # to be set correctly.
-                # with tempfile.NamedTemporaryFile() as f:
+                with tempfile.NamedTemporaryFile() as f:
+                    mol.write(format="mol2", filename=f.name, overwrite=True)
+                    mol = list(pybel.readfile("mol2", f.name))[0]
 
-                mol.write(format="mol2", filename="test.mol2", overwrite=True)
-                mol = list(pybel.readfile("mol2", "test.mol2"))[0]
-
-                # for i in mol:
-                #    valence = i.OBAtom.GetExplicitValence()
-                #    degree = i.OBAtom.GetExplicitDegree()
-                #    i.OBAtom.SetImplicitHCount(valence - degree)
                 mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
                 print(f"Added {n_atoms2-n_atoms} hydrogens.")
