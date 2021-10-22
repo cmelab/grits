@@ -11,6 +11,8 @@ on:
       - main
     paths:
       - 'grits/**'
+  # Allows workflow to be manually triggered
+  workflow_dispatch:
 
 jobs:
   pytest:
