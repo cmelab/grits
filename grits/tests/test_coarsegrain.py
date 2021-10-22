@@ -122,7 +122,7 @@ class Test_CGSystem(BaseTest):
         system.save_mapping(cg_json)
 
     def test_p3ht_noh(self, tmp_path):
-        gsdfile = path.join(asset_dir, "p3ht-noh.gsd")
+        gsdfile = path.join(asset_dir, "p3ht-noH.gsd")
         system = CG_System(
             gsdfile,
             beads={"_B": "c1cscc1", "_S": "CCC"},
