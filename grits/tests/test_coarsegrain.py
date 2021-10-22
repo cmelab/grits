@@ -121,6 +121,24 @@ class Test_CGSystem(BaseTest):
         cg_json = tmp_path / "cg-p3ht.json"
         system.save_mapping(cg_json)
 
+    def test_p3ht_noh(self, tmp_path):
+        gsdfile = path.join(asset_dir, "p3ht-noh.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1cscc1", "_S": "CCC"},
+            conversion_dict=amber_dict,
+            add_hydrogens=True,
+        )
+
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_B...c1cscc1"]) == 160
+
+        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        system.save(cg_gsd)
+
+        cg_json = tmp_path / "cg-p3ht.json"
+        system.save_mapping(cg_json)
+
     def test_iticp3ht(self, tmp_path):
         gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
         system = CG_System(
