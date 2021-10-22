@@ -3,12 +3,12 @@ name: pytest
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'grits/**'
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - 'grits/**'
 
