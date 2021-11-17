@@ -175,9 +175,10 @@ class CG_Compound(Compound):
         for key, inds in self.mapping.items():
             name, smarts = key.split("...")
             for group in inds:
+                mass = sum([self.atomistic[i].mass for i in group])
                 bead_xyz = self.atomistic.xyz[group, :]
                 avg_xyz = np.mean(bead_xyz, axis=0)
-                bead = Bead(name=name, pos=avg_xyz, smarts=smarts)
+                bead = Bead(name=name, pos=avg_xyz, smarts=smarts, mass=mass)
                 self.add(bead)
 
     def _cg_bonds(self):
