@@ -39,7 +39,7 @@ class Test_CGCompound(BaseTest):
         assert "_S" in types
         assert len(types) == 2
         assert np.isclose(cg_p3ht[0].mass, 80.104)
-        assert np.isclose(cg_p3ht[1].mass, 36.033)
+        assert np.isclose(cg_p3ht[17].mass, 36.033)
 
     def test_initp3htoverlap(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
