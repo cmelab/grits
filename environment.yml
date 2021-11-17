@@ -10,6 +10,7 @@ dependencies:
   - numpy
   - openbabel
   - pip
+  - pre-commit
   - py3Dmol
   - pytest
   - pytest-cov
