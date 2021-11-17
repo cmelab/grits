@@ -615,6 +615,7 @@ class CG_System:
             for s in old[start:stop]:
                 new_snap = gsd.hoomd.Snapshot()
                 position = []
+                mass = []
                 f_box = freud.Box.from_box(s.configuration.box)
                 unwrap_pos = f_box.unwrap(
                     s.particles.position, s.particles.image
@@ -623,7 +624,8 @@ class CG_System:
                 typeid = []
                 for i, inds in enumerate(self.mapping.values()):
                     typeid.append(np.ones(len(inds)) * i)
-                    position += [np.mean(unwrap_pos[i], axis=0) for i in inds]
+                    position += [np.mean(unwrap_pos[x], axis=0) for x in inds]
+                    mass += [sum(s.particles.mass[x]) for x in inds]
 
                 position = np.vstack(position)
                 images = f_box.get_images(position)
@@ -637,6 +639,7 @@ class CG_System:
                 new_snap.particles.image = images
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
+                new_snap.particles.mass = mass
                 if self._bond_array is not None:
                     new_snap.bonds.N = self._bond_array.shape[0]
                     new_snap.bonds.group = self._bond_array
