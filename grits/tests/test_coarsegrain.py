@@ -24,6 +24,7 @@ class Test_CGCompound(BaseTest):
         types = set([i.name for i in cg_methane.particles()])
         assert "_A" in types
         assert len(types) == 1
+        assert np.isclose(cg_methane.mass, 12.011)
 
     def test_initp3ht(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
@@ -37,6 +38,8 @@ class Test_CGCompound(BaseTest):
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
+        assert np.isclose(cg_p3ht[0].mass, 80.104)
+        assert np.isclose(cg_p3ht[17].mass, 36.033)
 
     def test_initp3htoverlap(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
@@ -117,6 +120,10 @@ class Test_CGSystem(BaseTest):
 
         cg_gsd = tmp_path / "cg-p3ht.gsd"
         system.save(cg_gsd)
+        with gsd.hoomd.open(cg_gsd) as f:
+            snap = f[0]
+            assert len(set(snap.particles.mass)) == 2
+            assert np.isclose(snap.particles.mass[0], 2.49844)
 
         cg_json = tmp_path / "cg-p3ht.json"
         system.save_mapping(cg_json)
