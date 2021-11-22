@@ -1,10 +1,20 @@
 FROM mambaorg/micromamba:0.15.2
 
 COPY --chown=micromamba:micromamba environment.yml /tmp/env.yml
+
 RUN micromamba install -y -n base -f /tmp/env.yml && \
     micromamba clean --all --yes
 
-USER root
+COPY grits setup.py /tmp/
 
-# Install curl for Codecov
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl
+RUN ls -la /tmp
+
+RUN python -m pip install /tmp
+
+RUN pytest -vx
+
+RUN rm -r /tmp/*
+
+RUN python -c "import grits"
+
+USER root
