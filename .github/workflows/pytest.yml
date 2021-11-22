@@ -5,25 +5,41 @@ on:
     branches:
       - main
     paths:
-      - 'grits/**'
+      - grits/**
+      - environment.yml
+      - .github/workflows/pytest.yml
   pull_request:
     branches:
       - main
     paths:
-      - 'grits/**'
+      - grits/**
+      - environment.yml
+      - .github/workflows/pytest.yml
   # Allows workflow to be manually triggered
   workflow_dispatch:
 
 jobs:
   pytest:
     runs-on: ubuntu-latest
-    container:
-        image: cmelab/grits:latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Build environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        environment-file: environment-cpu.yml
+        miniforge-variant: Mambaforge
+        miniforge-version: 4.9.2-4
+        use-mamba: true
+
+    - name: Install package
+      shell: bash -l {0}
+      run: pip install .
 
     - name: Run pytest with coverage report
+      shell: bash -l {0}
       run: python -m pytest -v -rs --cov=./ --cov-report=xml
 
     - name: Upload coverage to Codecov
