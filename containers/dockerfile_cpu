@@ -1,10 +1,18 @@
 FROM mambaorg/micromamba:0.15.2
 
 COPY --chown=micromamba:micromamba environment.yml /tmp/env.yml
+
 RUN micromamba install -y -n base -f /tmp/env.yml && \
     micromamba clean --all --yes
 
-USER root
+COPY grits/ /tmp/grits/
 
-# Install curl for Codecov
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl
+COPY setup.py /tmp/
+
+RUN ls -la /tmp
+
+RUN python -m pip install /tmp
+
+RUN pytest -vx
+
+USER root
