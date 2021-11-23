@@ -15,8 +15,8 @@ RUN python -m pip install /tmp
 
 RUN pytest -vx
 
+USER root
+
 RUN rm -r /tmp/*
 
 RUN python -c "import grits"
-
-USER root
