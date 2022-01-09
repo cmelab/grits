@@ -2,21 +2,17 @@ name: grits
 channels:
   - conda-forge
 dependencies:
-  - ele #
-  #- mbuild
-  - mdanalysis
-  - mdtraj #
+  - ele
+  - freud
+  - gsd
+  - jupyterlab
+  - mbuild
   - numpy
   - openbabel
-  - oset #
-  - packmol>=18 #
-  - parmed>=3.4.0 #
   - pip
+  - pre-commit
   - py3Dmol
   - pytest
   - pytest-cov
-  - python=3.7
+  - python=3.8
   - rdkit
-  - scipy #
-  - pip:
-    - git+https://github.com/jennyfothergill/mbuild@feat/from_hoomdsnap

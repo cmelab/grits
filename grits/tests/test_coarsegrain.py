@@ -1,7 +1,15 @@
+import tempfile
+from os import path
+
+import gsd.hoomd
+import numpy as np
 import pytest
 from base_test import BaseTest
 
-from grits import CG_Compound
+from grits import CG_Compound, CG_System
+from grits.utils import amber_dict
+
+asset_dir = path.join(path.dirname(__file__), "assets")
 
 
 class Test_CGCompound(BaseTest):
@@ -16,6 +24,7 @@ class Test_CGCompound(BaseTest):
         types = set([i.name for i in cg_methane.particles()])
         assert "_A" in types
         assert len(types) == 1
+        assert np.isclose(cg_methane.mass, 12.011)
 
     def test_initp3ht(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
@@ -29,6 +38,8 @@ class Test_CGCompound(BaseTest):
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
+        assert np.isclose(cg_p3ht[0].mass, 80.104)
+        assert np.isclose(cg_p3ht[17].mass, 36.033)
 
     def test_initp3htoverlap(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
@@ -88,3 +99,86 @@ class Test_CGCompound(BaseTest):
     def test_reprnoerror(self, cg_methane, cg_p3ht):
         str(cg_p3ht)
         str(cg_methane)
+
+
+class Test_CGSystem(BaseTest):
+    def test_raises(self):
+        gsdfile = path.join(asset_dir, "p3ht.gsd")
+        with pytest.raises(ValueError):
+            CG_System(gsdfile)
+
+    def test_p3ht(self, tmp_path):
+        gsdfile = path.join(asset_dir, "p3ht.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1cscc1", "_S": "CCC"},
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_B...c1cscc1"]) == 160
+
+        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        system.save(cg_gsd)
+        with gsd.hoomd.open(cg_gsd) as f:
+            snap = f[0]
+            assert len(set(snap.particles.mass)) == 2
+            assert np.isclose(snap.particles.mass[0], 2.49844)
+
+        cg_json = tmp_path / "cg-p3ht.json"
+        system.save_mapping(cg_json)
+
+    def test_p3ht_noh(self, tmp_path):
+        gsdfile = path.join(asset_dir, "p3ht-noH.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1cscc1", "_S": "CCC"},
+            conversion_dict=amber_dict,
+            add_hydrogens=True,
+        )
+
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_B...c1cscc1"]) == 160
+
+        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        system.save(cg_gsd)
+
+        cg_json = tmp_path / "cg-p3ht.json"
+        system.save_mapping(cg_json)
+
+    def test_iticp3ht(self, tmp_path):
+        gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_A": "c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5", "_B": "c1cscc1"},
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+
+        cg_gsd = tmp_path / "cg-itic-p3ht.gsd"
+        system.save(cg_gsd)
+
+        cg_json = tmp_path / "cg-itic-p3ht.json"
+        system.save_mapping(cg_json)
+
+        map_system = CG_System(
+            gsdfile,
+            mapping=cg_json,
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(map_system.mapping, dict)
+        assert (
+            len(map_system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+        )
+
+        map_cg_gsd = tmp_path / "map-cg-itic-p3ht.gsd"
+        system.save(map_cg_gsd)
+
+        with gsd.hoomd.open(map_cg_gsd) as t_map, gsd.hoomd.open(cg_gsd) as t:
+            map_s = t_map[0]
+            s = t[0]
+            assert s.particles.N == 170
+            assert np.all(s.particles.position == map_s.particles.position)

@@ -1,5 +1,9 @@
+# scratch dir
+scratch
+
 # chemical files formats
 *.gsd
+*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -130,3 +134,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# OSX
+.DS_Store

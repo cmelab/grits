@@ -9,7 +9,7 @@ A toolkit for working with coarse-grain systems.
 
     introduction
     installation
-    tutorial
+    tutorials/tutorials
 
 .. toctree::
     :maxdepth: 2

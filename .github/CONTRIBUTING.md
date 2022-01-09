@@ -12,7 +12,7 @@ Contributions are welcomed via pull requests (PRs) on GitHub. Developers and/or 
 ### Guideline for Code Contributions
 
 * Use the [OneFlow](https://www.endoflineblog.com/oneflow-a-git-branching-model-and-workflow) model of development:
-  - Both new features and bug fixes should be developed in branches based on `master`.
+  - Both new features and bug fixes should be developed in branches based on `main`.
 * Avoid introducing dependencies -- especially those that might be harder to install in high-performance computing environments.
 * Create [unit tests](https://en.wikipedia.org/wiki/Unit_testing) for any added features that cover the common and corner cases of the code.
 * Preserve backwards-compatibility whenever possible, and make clear if something must change.
