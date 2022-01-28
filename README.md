@@ -28,6 +28,10 @@ To create a local environment with [conda](https://docs.conda.io/en/latest/minic
 conda env create -f environment.yml
 conda activate grits
 ```
+With the `grits` environment active, install the package with pip:
+```
+pip install .
+```
 And to test your installation, run:
 ```
 pytest
