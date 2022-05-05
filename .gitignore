@@ -1,3 +1,6 @@
+# When using setuptools_scm don't track __version__.py
+__version__.py
+
 # scratch dir
 scratch
 
