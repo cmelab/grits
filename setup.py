@@ -9,7 +9,7 @@ DESCRIPTION = "A toolkit for working with coarse-grained systems"
 URL = "https://github.com/cmelab/grits"
 EMAIL = "jennyfothergill@boisestate.edu"
 AUTHOR = "Jenny Fothergill"
-REQUIRES_PYTHON = ">=3.7.0"
+REQUIRES_PYTHON = ">=3.8"
 
 # What packages are required for this module to be executed?
 REQUIRED = ["mbuild", "numpy"]
@@ -54,6 +54,6 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
 )
