@@ -2,50 +2,57 @@
 __all__ = ["backmap"]
 
 import itertools as it
+import tempfile
 from collections import defaultdict
 
+import numpy as np
 from mbuild import Compound, Particle, load
+from openbabel import pybel
 
-from grits.utils import align, get_hydrogen, get_index, snap_molecules
+from grits.utils import (
+    align,
+    comp_from_snapshot,
+    get_hydrogen,
+    get_index,
+    snap_molecules,
+)
 
 
-    def _get_compounds(
-        gsdfile, scale, conversion_dict, frame
-    ):
-        """Get compounds for each molecule in the gsd trajectory."""
-        with gsd.hoomd.open(gsdfile) as t:
-            snap = t[frame]
+def _get_compounds(snap, conversion_dict=None, scale=1.0):
+    """Get compounds for each molecule in the gsd snapshot."""
+    # Use the conversion dictionary to map particle type to element symbol
+    if conversion_dict is not None:
+        snap.particles.types = [
+            conversion_dict[i].symbol for i in snap.particles.types
+        ]
+    # Break apart the snapshot into separate molecules
+    molecules = snap_molecules(snap)
+    mol_inds = []
+    for i in range(max(molecules) + 1):
+        mol_inds.append(np.where(molecules == i)[0])
 
-        # Use the conversion dictionary to map particle type to element symbol
-        if conversion_dict is not None:
-            snap.particles.types = [
-                conversion_dict[i].symbol for i in snap.particles.types
-            ]
-        # Break apart the snapshot into separate molecules
-        molecules = snap_molecules(snap)
-        mol_inds = []
-        for i in range(max(molecules) + 1):
-            mol_inds.append(np.where(molecules == i)[0])
+    # Convert each unique molecule to a compound
+    system = Compound()
+    for inds in mol_inds:
+        l = len(inds)
+        compound = comp_from_snapshot(snap, inds, scale=scale)
+        mol = compound.to_pybel()
+        mol.OBMol.PerceiveBondOrders()
 
-        # Convert each unique molecule to a compound
-        system = Compound()
-        for inds in mol_inds:
-            l = len(inds)
-            compound = comp_from_snapshot(snap, inds, scale=scale),
-            mol = compound.to_pybel()
-            mol.OBMol.PerceiveBondOrders()
+        # Add hydrogens
+        n_atoms = mol.OBMol.NumAtoms()
+        # This is a goofy work around necessary for the aromaticity
+        # to be set correctly.
+        with tempfile.NamedTemporaryFile() as f:
+            mol.write(format="mol2", filename=f.name, overwrite=True)
+            mol = list(pybel.readfile("mol2", f.name))[0]
 
-            # Add hydrogens
-            n_atoms = mol.OBMol.NumAtoms()
-            # This is a goofy work around necessary for the aromaticity
-            # to be set correctly.
-            with tempfile.NamedTemporaryFile() as f:
-                mol.write(format="mol2", filename=f.name, overwrite=True)
-                mol = list(pybel.readfile("mol2", f.name))[0]
+        mol.addh()
+        n_atoms2 = mol.OBMol.NumAtoms()
+        return mol
+        system.add(Compound().from_pybel(mol))
+    return system
 
-            mol.addh()
-            n_atoms2 = mol.OBMol.NumAtoms()
-            system.add(Compound().from_pybel(mol))
 
 def backmap(cg_compound):
     """Backmap a fine-grained representation onto a coarse one.
