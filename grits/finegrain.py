@@ -5,9 +5,11 @@ import itertools as it
 import tempfile
 from collections import defaultdict
 
+import gsd.hoomd
 import numpy as np
+from ele import element_from_atomic_number
 from mbuild import Compound, Particle, load
-from openbabel import pybel
+from openbabel import openbabel, pybel
 
 from grits.utils import (
     align,
@@ -18,8 +20,22 @@ from grits.utils import (
 )
 
 
-def _get_compounds(snap, conversion_dict=None, scale=1.0):
-    """Get compounds for each molecule in the gsd snapshot."""
+def _add_hydrogens(snap, conversion_dict=None, scale=1.0):
+    """Add hydrogens to a united atom gsd snapshot.
+
+    Parameters
+    ----------
+    snap : gsd.hoomd.Snapshot
+        The united-atom gsd snapshot
+    conversion_dict : dict, default None
+        Dictionary to map particle types to their element.
+    scale : float, default 1.0
+        Factor by which to scale length values.
+
+    Returns
+    -------
+    gsd.hoomd.Snapshot
+    """
     # Use the conversion dictionary to map particle type to element symbol
     if conversion_dict is not None:
         snap.particles.types = [
@@ -31,16 +47,20 @@ def _get_compounds(snap, conversion_dict=None, scale=1.0):
     for i in range(max(molecules) + 1):
         mol_inds.append(np.where(molecules == i)[0])
 
-    # Convert each unique molecule to a compound
-    system = Compound()
+    types = []
+    coords = []
+    bonds = []
+    # Read each molecule into a compound
+    # Then convert to pybel to add hydrogens
     for inds in mol_inds:
         l = len(inds)
-        compound = comp_from_snapshot(snap, inds, scale=scale)
+        compound = comp_from_snapshot(
+            snap, inds, scale=scale, shift_coords=False
+        )
         mol = compound.to_pybel()
         mol.OBMol.PerceiveBondOrders()
 
         # Add hydrogens
-        n_atoms = mol.OBMol.NumAtoms()
         # This is a goofy work around necessary for the aromaticity
         # to be set correctly.
         with tempfile.NamedTemporaryFile() as f:
@@ -48,10 +68,23 @@ def _get_compounds(snap, conversion_dict=None, scale=1.0):
             mol = list(pybel.readfile("mol2", f.name))[0]
 
         mol.addh()
-        n_atoms2 = mol.OBMol.NumAtoms()
-        return mol
-        system.add(Compound().from_pybel(mol))
-    return system
+        for atom in mol.atoms:
+            coords.append(np.array(atom.coords) / 10)
+            types.append(element_from_atomic_number(atom.atomicnum).symbol)
+        for bond in openbabel.OBMolBondIter(mol.OBMol):
+            bonds.append([bond.GetBeginAtomIdx() - 1, bond.GetEndAtomIdx() - 1])
+    alltypes = list(set(types))
+    typeids = [alltypes.index(i) for i in types]
+    new_snap = gsd.hoomd.Snapshot()
+    new_snap.configuration.box = snap.configuration.box
+    new_snap.particles.N = len(types)
+    new_snap.particles.types = alltypes
+    new_snap.particles.typeid = typeids
+    new_snap.particles.position = np.array(coords)
+    new_snap.bonds.N = len(bonds)
+    new_snap.bonds.group = np.array(bonds)
+    new_snap.validate()
+    return new_snap
 
 
 def backmap(cg_compound):
