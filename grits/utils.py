@@ -25,7 +25,7 @@ class NumpyEncoder(json.JSONEncoder):
             return super(NumpyEncoder, self).default(obj)
 
 
-def comp_from_snapshot(snapshot, indices, scale=1.0):
+def comp_from_snapshot(snapshot, indices, scale=1.0, shift_coords=True):
     """Convert particles by indices from a Snapshot to a Compound.
 
     Parameters
@@ -36,6 +36,8 @@ def comp_from_snapshot(snapshot, indices, scale=1.0):
         Indices of the particles to be added to the compound.
     scale : float, default 1.0
         Value by which to scale the length values
+    shift_coords : bool, default True
+        Whether to shift the coords by half the box lengths
 
     Returns
     -------
@@ -56,8 +58,11 @@ def comp_from_snapshot(snapshot, indices, scale=1.0):
         lengths=box[:3] * scale, tilt_factors=box[3:]
     )
 
-    # GSD and HOOMD snapshots center their boxes on the origin (0,0,0)
-    shift = np.array(comp.box.lengths) / 2
+    if shift_coords:
+        # GSD and HOOMD snapshots center their boxes on the origin (0,0,0)
+        shift = np.array(comp.box.lengths) / 2
+    else:
+        shift = np.zeros(3)
     particle_dict = {}
     # Add particles
     for i in range(n_atoms):
