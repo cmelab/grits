@@ -124,7 +124,9 @@ class Test_CGSystem(BaseTest):
             snap = f[0]
             assert len(set(snap.particles.mass)) == 2
             assert np.isclose(snap.particles.mass[0], 2.49844)
-            assert len(snap.bonds.typeid)==len(snap.bonds.group)==snap.bonds.N
+            assert (
+                len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
+            )
             assert len(snap.bonds.types) == 3
 
         cg_json = tmp_path / "cg-p3ht.json"
