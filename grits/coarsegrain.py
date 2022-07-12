@@ -640,18 +640,20 @@ class CG_System:
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
-                bonds_types = []
-                bond_ids = []
+
                 if self._bond_array is not None:
                     new_snap.bonds.N = self._bond_array.shape[0]
+                    bond_types = []
+                    bond_ids = []
                     for bond in self._bond_array:
-                        bond_pair = "-".join(
-                                types[bond[0]],
-                                types[bond[1]]
-                        )
-                        if bond_pair not in bonds_types:
+                        bond_pair = "-".join([
+                                types[int(typeid[int(bond[0])])],
+                                types[int(typeid[int(bond[1])])]
+                        ])
+                        if bond_pair not in bond_types:
                             bond_types.append(bond_pair)
-                        bond_ids.append(np.where(bond_types==bond_pair)[0]) 
+                        _id = np.where(np.array(bond_types)==bond_pair)[0]
+                        bond_ids.append(_id) 
 
                     new_snap.bonds.group = self._bond_array
                     new_snap.bonds.types = np.array(bond_types)
