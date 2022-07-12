@@ -646,14 +646,16 @@ class CG_System:
                     bond_types = []
                     bond_ids = []
                     for bond in self._bond_array:
-                        bond_pair = "-".join([
+                        bond_pair = "-".join(
+                            [
                                 types[int(typeid[int(bond[0])])],
-                                types[int(typeid[int(bond[1])])]
-                        ])
+                                types[int(typeid[int(bond[1])])],
+                            ]
+                        )
                         if bond_pair not in bond_types:
                             bond_types.append(bond_pair)
-                        _id = np.where(np.array(bond_types)==bond_pair)[0]
-                        bond_ids.append(_id) 
+                        _id = np.where(np.array(bond_types) == bond_pair)[0]
+                        bond_ids.append(_id)
 
                     new_snap.bonds.group = self._bond_array
                     new_snap.bonds.types = np.array(bond_types)
