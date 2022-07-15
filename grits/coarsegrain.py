@@ -613,7 +613,7 @@ class CG_System:
             typeid.append(np.ones(len(inds)) * i)
         typeid = np.hstack(typeid)
 
-        # Set up bond information if it exists 
+        # Set up bond information if it exists
         bond_types = []
         bond_ids = []
         N_bonds = 0
