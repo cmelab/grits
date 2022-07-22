@@ -593,7 +593,7 @@ class CG_System:
         Retains:
             - configuration: box, step
             - particles: N, position, typeid, types
-            - bonds: N, group
+            - bonds: N, group, typeid, types
 
         Parameters
         ----------
@@ -607,6 +607,30 @@ class CG_System:
             Where to stop reading the gsd trajectory the system was created
             with. If None, will stop at the last frame.
         """
+        typeid = []
+        types = [i.split("...")[0] for i in self.mapping]
+        for i, inds in enumerate(self.mapping.values()):
+            typeid.append(np.ones(len(inds)) * i)
+        typeid = np.hstack(typeid)
+
+        # Set up bond information if it exists
+        bond_types = []
+        bond_ids = []
+        N_bonds = 0
+        if self._bond_array is not None:
+            N_bonds = self._bond_array.shape[0]
+            for bond in self._bond_array:
+                bond_pair = "-".join(
+                    [
+                        types[int(typeid[int(bond[0])])],
+                        types[int(typeid[int(bond[1])])],
+                    ]
+                )
+                if bond_pair not in bond_types:
+                    bond_types.append(bond_pair)
+                _id = np.where(np.array(bond_types) == bond_pair)[0]
+                bond_ids.append(_id)
+
         with gsd.hoomd.open(cg_gsdfile, "wb") as new, gsd.hoomd.open(
             self.gsdfile, "rb"
         ) as old:
@@ -620,17 +644,13 @@ class CG_System:
                 unwrap_pos = f_box.unwrap(
                     s.particles.position, s.particles.image
                 )
-                types = [i.split("...")[0] for i in self.mapping]
-                typeid = []
                 for i, inds in enumerate(self.mapping.values()):
-                    typeid.append(np.ones(len(inds)) * i)
                     position += [np.mean(unwrap_pos[x], axis=0) for x in inds]
                     mass += [sum(s.particles.mass[x]) for x in inds]
 
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
-                typeid = np.hstack(typeid)
 
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
@@ -640,7 +660,8 @@ class CG_System:
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
-                if self._bond_array is not None:
-                    new_snap.bonds.N = self._bond_array.shape[0]
-                    new_snap.bonds.group = self._bond_array
+                new_snap.bonds.N = N_bonds
+                new_snap.bonds.group = self._bond_array
+                new_snap.bonds.types = np.array(bond_types)
+                new_snap.bonds.typeid = np.array(bond_ids)
                 new.append(new_snap)
