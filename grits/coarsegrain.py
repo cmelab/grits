@@ -472,7 +472,6 @@ class CG_System:
         self._compounds = []
         self._inds = []
         self._bond_array = None
-        self._angle_array = None
 
         if beads is not None:
             # get compounds
