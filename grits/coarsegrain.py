@@ -176,7 +176,6 @@ class CG_Compound(Compound):
             name, smarts = key.split("...")
             for group in inds:
                 mass = sum([self.atomistic[i].mass for i in group])
-                #mass = 1
                 bead_xyz = self.atomistic.xyz[group, :]
                 avg_xyz = np.mean(bead_xyz, axis=0)
                 bead = Bead(name=name, pos=avg_xyz, smarts=smarts, mass=mass)
@@ -473,6 +472,7 @@ class CG_System:
         self._compounds = []
         self._inds = []
         self._bond_array = None
+        self._angle_array = None
 
         if beads is not None:
             # get compounds
