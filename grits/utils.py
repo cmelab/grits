@@ -1,7 +1,7 @@
 """Utility functions for GRiTS."""
 import json
 import re
-
+import rowan
 import ele
 import freud
 import numpy as np
