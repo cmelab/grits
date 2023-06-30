@@ -56,6 +56,10 @@ class CG_Compound(Compound):
         Whether to allow beads representing ring structures to share atoms.
     add_hydrogens : bool, default False
         Whether to add hydrogens. Useful for united-atom models.
+    aniso_beads : bool, default False
+        Whether to calculate orientations for anisotropic beads.
+        Note: Bead sizes should be fitted during paramaterization.
+        These are not calculated here.   
 
     Attributes
     ----------
@@ -87,6 +91,7 @@ class CG_Compound(Compound):
         mapping=None,
         allow_overlap=False,
         add_hydrogens=False,
+        aniso_beads=False,
         **kwargs,
     ):
         super(CG_Compound, self).__init__(**kwargs)
@@ -454,6 +459,10 @@ class CG_System:
         Factor by which to scale mass values.
     add_hydrogens : bool, default False
         Whether to add hydrogens. Useful for united-atom models.
+    aniso_beads : bool, default False
+        Whether to calculate orientations for anisotropic beads.
+        Note: Bead sizes should be fitted during paramaterization.
+        These are not calculated here.
 
     Attributes
     ----------
@@ -476,6 +485,7 @@ class CG_System:
         length_scale=1.0,
         mass_scale=1.0,
         add_hydrogens=False,
+        aniso_beads=False,
     ):
         if (beads is None) == (mapping is None):
             raise ValueError(
@@ -495,6 +505,7 @@ class CG_System:
                 length_scale=length_scale,
                 conversion_dict=conversion_dict,
                 add_hydrogens=add_hydrogens,
+                aniso_beads=aniso_beads
             )
 
             # calculate the bead mappings for the entire trajectory
@@ -512,6 +523,11 @@ class CG_System:
         length_scale,
         conversion_dict,
         add_hydrogens,
+<<<<<<< HEAD
+=======
+        aniso_beads
+
+>>>>>>> Start adding aniso mapping flags
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -549,6 +565,7 @@ class CG_System:
                     compound=mb_comp,
                     beads=beads,
                     add_hydrogens=add_hydrogens,
+                    aniso_beads=aniso_beads,
                 )
             )
             self._inds.append(
