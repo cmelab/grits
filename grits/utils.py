@@ -323,30 +323,31 @@ def get_minor_axis(particle_positions, center_of_mass, AB_indicies):
             CoM_vector = quatvect
     return CoM_vector
 
-def get_axis_angle(n1, n0=np.array([0, 0, 1])):
-    '''Calculates axis and angle of rotation to transform one plane
-       into another given their normal vectors.
+def get_axis_angle_to_quaternions(n1, n0=np.array([0, 0, 1])):
+    '''Calculates axis and angle of rotation given
+       two planes normal vectors, which is then used
+       to calculate the quaternions.
 
     Parameters
     ----------
         n1 : numpy array
-            first plane's normal vector
+            numpy array that is the normal vector of lpar and CoM vector.
         n0 : numpy array
-            reference plane's normal vector (default: xy plane)
-
+            numpy array that is used to define our axis of rotation,
+            always about the z axis.
     Returns
     -------
-        V_axis : numpy array
-            axis of rotation
-        theta_rotation : float
-            angle of rotation
+        quaternion : numpy array
+            numpy array that tells the position of the monomer in units
+            of a quaternion.
     '''
 
     V_axis = np.cross(n0, n1)
     theta_numerator = np.dot(n0, n1)
     theta_denominator = np.linalg.norm(n0) * np.linalg.norm(n1)
     theta_rotation = np.arccos(theta_numerator / theta_denominator)
-    return V_axis, theta_rotation
+    quaternion = rowan.from_axis_angle(V_axis, theta_rotation)
+    return quaternion
 
 def get_hydrogen(compound, particle):
     """Get the first hydrogen attached to particle.
