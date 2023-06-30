@@ -310,20 +310,20 @@ def get_minor_axis(particle_positions, center_of_mass, AB_indicies):
             Center of mass vector calculated to serve as minor axis
     '''
 
-    AB = lpar
+    AB = particle_positions[AB_indicies[1]] - particle_positions[AB_indicies[0]]
     CoM_vector = None
     maxdist = 0
     for i, vect0 in enumerate(particle_positions):
         if i in AB_indicies:
             continue
-        quatvect = vect0 - pps_center
+        quatvect = vect0 - center_of_mass
         dist = np.linalg.norm(quatvect)
         if dist > maxdist and not np.isclose(np.cross(AB, quatvect), np.zeros(3)).all():
             maxdist = dist
             CoM_vector = quatvect
     return CoM_vector
 
-def get_axis_angle_to_quaternions(n1, n0=np.array([0, 0, 1])):
+def get_quaternions(n1, n0=np.array([0, 0, 1])):
     '''Calculates axis and angle of rotation given
        two planes normal vectors, which is then used
        to calculate the quaternions.
@@ -331,10 +331,10 @@ def get_axis_angle_to_quaternions(n1, n0=np.array([0, 0, 1])):
     Parameters
     ----------
         n1 : numpy array
-            numpy array that is the normal vector of lpar and CoM vector.
+            numpy array that is the major axis vector.
         n0 : numpy array
-            numpy array that is used to define our axis of rotation,
-            always about the z axis.
+            numpy array that is used to define the default quaternion.
+            Defaults to the Z-axis.
     Returns
     -------
         quaternion : numpy array
