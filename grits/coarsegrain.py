@@ -181,6 +181,7 @@ class CG_Compound(Compound):
 
     def _cg_particles(self):
         """Set the beads in the coarse-structure."""
+        orientations = []
         for key, inds in self.mapping.items():
             name, smarts = key.split("...")
             for group in inds:
@@ -199,8 +200,10 @@ class CG_Compound(Compound):
                             pos=avg_xyz,
                             smarts=smarts,
                             mass=tot_mass,
-                            orientation=orientation)
+                            orientation=orientation,)
+                orientations.append(orientation)
                 self.add(bead)
+        self._orientation_array = np.array(orientations)
 
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
@@ -429,6 +432,7 @@ class Bead(Compound):
 
     def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
+        print(f'DEBUG\nSETTING ORIENTATION TO {orientation}')
         self.orientation = orientation
         super(Bead, self).__init__(element=None, **kwargs)
 
@@ -505,6 +509,8 @@ class CG_System:
         self._compounds = []
         self._inds = []
         self._bond_array = None
+        self.aniso_beads = aniso_beads
+        self._orientation_array = None
 
         if beads is not None:
             # get compounds
@@ -535,7 +541,6 @@ class CG_System:
         conversion_dict,
         add_hydrogens,
         aniso_beads
-
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -717,6 +722,8 @@ class CG_System:
                 new_snap.particles.mass = mass
                 new_snap.bonds.N = N_bonds
                 new_snap.bonds.group = self._bond_array
+                if self.aniso_beads:
+                    new_snap.particles.orientations = self._orientation_array
                 new_snap.bonds.types = np.array(bond_types)
                 new_snap.bonds.typeid = np.array(bond_ids)
                 new.append(new_snap)
