@@ -323,7 +323,7 @@ def get_minor_axis(particle_positions, center_of_mass, AB_indicies):
             CoM_vector = quatvect
     return CoM_vector
 
-def get_quaternions(n1, n0=np.array([0, 0, 1])):
+def get_quaternion(n1, n0=np.array([0, 0, 1])):
     '''Calculates axis and angle of rotation given
        two planes normal vectors, which is then used
        to calculate the quaternions.
