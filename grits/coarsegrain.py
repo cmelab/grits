@@ -192,6 +192,7 @@ class CG_Compound(Compound):
 
     def _cg_particles(self):
         """Set the beads in the coarse-structure."""
+        orientations = []
         for key, inds in self.mapping.items():
             name, smarts = key.split("...")
             for group in inds:
@@ -210,8 +211,10 @@ class CG_Compound(Compound):
                             pos=avg_xyz,
                             smarts=smarts,
                             mass=tot_mass,
-                            orientation=orientation)
+                            orientation=orientation,)
+                orientations.append(orientation)
                 self.add(bead)
+        self._orientation_array = np.array(orientations)
 
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
@@ -440,6 +443,7 @@ class Bead(Compound):
 
     def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
+        print(f'DEBUG\nSETTING ORIENTATION TO {orientation}')
         self.orientation = orientation
         super(Bead, self).__init__(element=None, **kwargs)
 
@@ -519,6 +523,8 @@ class CG_System:
         self._inds = []
         self._bond_array = None
         self.mass_scale = mass_scale
+        self.aniso_beads = aniso_beads
+        self._orientation_array = None
 
         if beads is not None:
             # get compounds
@@ -741,4 +747,6 @@ class CG_System:
                     else:
                         new_snap.bonds.types = None
                     new_snap.bonds.type_shapes = bond_type_shapes
+                    if self.aniso_beads:
+                        new_snap.particles.orientations = self._orientation_array
                 new.append(new_snap)
