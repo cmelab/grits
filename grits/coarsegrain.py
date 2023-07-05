@@ -648,6 +648,8 @@ class CG_System:
         # Set up bond information if it exists
         bond_types = []
         bond_ids = []
+        # Todo: Fill this if we need to
+        bond_type_shapes = None
         N_bonds = 0
         if self._bond_array is not None:
             N_bonds = self._bond_array.shape[0]
@@ -662,6 +664,8 @@ class CG_System:
                     bond_types.append(bond_pair)
                 _id = np.where(np.array(bond_types) == bond_pair)[0]
                 bond_ids.append(_id)
+        else:
+            bond_types = None
 
         with gsd.hoomd.open(cg_gsdfile, "wb") as new, gsd.hoomd.open(
             self.gsdfile, "rb"
@@ -693,7 +697,11 @@ class CG_System:
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
                 new_snap.bonds.N = N_bonds
+                if bond_types is not None:
+                    new_snap.bonds.types = np.array(bond_types)
+                else:
+                    new_snap.bonds.types = None
                 new_snap.bonds.group = self._bond_array
-                new_snap.bonds.types = np.array(bond_types)
                 new_snap.bonds.typeid = np.array(bond_ids)
+                new_snap.bonds.type_shapes = bond_type_shapes
                 new.append(new_snap)
