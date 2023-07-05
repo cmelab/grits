@@ -11,6 +11,7 @@ import numpy as np
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
 from openbabel import pybel
+from ele import element_from_symbol
 
 from grits.utils import (
     NumpyEncoder,
@@ -19,6 +20,8 @@ from grits.utils import (
     has_common_member,
     has_number,
     snap_molecules,
+    get_major_axis,
+    get_quaternion,
 )
 
 __all__ = ["CG_Compound", "CG_System", "Bead"]
@@ -58,7 +61,7 @@ class CG_Compound(Compound):
     aniso_beads : bool, default False
         Whether to calculate orientations for anisotropic beads.
         Note: Bead sizes should be fitted during paramaterization.
-        These are not calculated here.   
+        Only Gay-Berne major axis orientations are calculated here.
 
     Attributes
     ----------
@@ -101,6 +104,7 @@ class CG_Compound(Compound):
         self.atomistic = compound
         self.anchors = None
         self.bond_map = None
+        self.aniso_beads = aniso_beads
 
         if beads is not None:
             mol = compound.to_pybel()
@@ -177,14 +181,29 @@ class CG_Compound(Compound):
 
     def _cg_particles(self):
         """Set the beads in the coarse-structure."""
+        orientations = []
         for key, inds in self.mapping.items():
             name, smarts = key.split("...")
             for group in inds:
-                mass = sum([self.atomistic[i].mass for i in group])
+                masses = np.array([self.atomistic[i].mass for i in group])
+                tot_mass = sum(masses)
                 bead_xyz = self.atomistic.xyz[group, :]
                 avg_xyz = np.mean(bead_xyz, axis=0)
-                bead = Bead(name=name, pos=avg_xyz, smarts=smarts, mass=mass)
+                orientation = None
+                if self.aniso_beads:
+                    # filter out hydrogens
+                    hmass = element_from_symbol('H').mass
+                    heavy_positions = bead_xyz[np.where(masses > hmass)]
+                    major_axis, ab_idxs = get_major_axis(heavy_positions)
+                    orientation = get_quaternion(major_axis)
+                bead = Bead(name=name,
+                            pos=avg_xyz,
+                            smarts=smarts,
+                            mass=tot_mass,
+                            orientation=orientation,)
+                orientations.append(orientation)
                 self.add(bead)
+        self._orientation_array = np.array(orientations)
 
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
@@ -398,15 +417,23 @@ class Bead(Compound):
     ----------
     smarts : str, default None
         SMARTS string used to specify this Bead.
+    orientation : numpy array, default None
+        Quaternion describing an anisotropic Gay-Berne
+        bead's orientation.
 
     Attributes
     ----------
     smarts : str
         SMARTS string used to specify this Bead.
+    orientation : numpy array
+        Quaternion describing an anisotropic Gay-Berne
+        bead's orientation.
     """
 
-    def __init__(self, smarts=None, **kwargs):
+    def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
+        print(f'DEBUG\nSETTING ORIENTATION TO {orientation}')
+        self.orientation = orientation
         super(Bead, self).__init__(element=None, **kwargs)
 
 
@@ -482,6 +509,8 @@ class CG_System:
         self._compounds = []
         self._inds = []
         self._bond_array = None
+        self.aniso_beads = aniso_beads
+        self._orientation_array = None
 
         if beads is not None:
             # get compounds
@@ -512,7 +541,6 @@ class CG_System:
         conversion_dict,
         add_hydrogens,
         aniso_beads
-
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -702,6 +730,8 @@ class CG_System:
                 else:
                     new_snap.bonds.types = None
                 new_snap.bonds.group = self._bond_array
+                if self.aniso_beads:
+                    new_snap.particles.orientations = self._orientation_array
                 new_snap.bonds.typeid = np.array(bond_ids)
                 new_snap.bonds.type_shapes = bond_type_shapes
                 new.append(new_snap)
