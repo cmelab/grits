@@ -523,11 +523,7 @@ class CG_System:
         length_scale,
         conversion_dict,
         add_hydrogens,
-<<<<<<< HEAD
-=======
         aniso_beads
-
->>>>>>> Start adding aniso mapping flags
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -663,6 +659,8 @@ class CG_System:
         # Set up bond information if it exists
         bond_types = []
         bond_ids = []
+        # Todo: Fill this if we need to
+        bond_type_shapes = None
         N_bonds = 0
         if self._bond_array is not None:
             N_bonds = self._bond_array.shape[0]
@@ -677,6 +675,8 @@ class CG_System:
                     bond_types.append(bond_pair)
                 _id = np.where(np.array(bond_types) == bond_pair)[0]
                 bond_ids.append(_id)
+        else:
+            bond_types = None
 
         with gsd.hoomd.open(cg_gsdfile, "w") as new, gsd.hoomd.open(
             self.gsdfile, "r"
@@ -712,6 +712,10 @@ class CG_System:
                 if N_bonds > 0:
                     new_snap.bonds.N = N_bonds
                     new_snap.bonds.group = self._bond_array
-                    new_snap.bonds.types = np.array(bond_types)
                     new_snap.bonds.typeid = np.array(bond_ids)
+                    if bond_types is not None:
+                        new_snap.bonds.types = np.array(bond_types)
+                    else:
+                        new_snap.bonds.types = None
+                    new_snap.bonds.type_shapes = bond_type_shapes
                 new.append(new_snap)
