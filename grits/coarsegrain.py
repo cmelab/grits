@@ -202,8 +202,10 @@ class CG_Compound(Compound):
                             mass=tot_mass,
                             orientation=orientation,)
                 orientations.append(orientation)
+                print(f'appended {orientation} to orientations')
                 self.add(bead)
         self._orientation_array = np.array(orientations)
+        print(self._orientation_array)
 
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
@@ -432,7 +434,6 @@ class Bead(Compound):
 
     def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
-        print(f'DEBUG\nSETTING ORIENTATION TO {orientation}')
         self.orientation = orientation
         super(Bead, self).__init__(element=None, **kwargs)
 
@@ -704,6 +705,7 @@ class CG_System:
                 new_snap = gsd.hoomd.Snapshot()
                 position = []
                 mass = []
+                orientation = []
                 f_box = freud.Box.from_box(s.configuration.box)
                 unwrap_pos = f_box.unwrap(
                     s.particles.position, s.particles.image
@@ -711,10 +713,20 @@ class CG_System:
                 for i, inds in enumerate(self.mapping.values()):
                     position += [np.mean(unwrap_pos[x], axis=0) for x in inds]
                     mass += [sum(s.particles.mass[x]) for x in inds]
-
+                    if self.aniso_beads:
+                        for x in inds:
+                            masses = s.particles.mass[x]
+                            hmass = element_from_symbol('H').mass
+                            positions = s.particles.position[x]
+                            heavy_positions = positions[np.where(masses > hmass)]
+                            heavy_positions = f_box.wrap(heavy_positions)
+                            major_axis, ab_idxs = get_major_axis(heavy_positions)
+                            orientation.append(get_quaternion(major_axis))
+                    
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
+                orientation = np.vstack(orientation)
 
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
@@ -731,7 +743,7 @@ class CG_System:
                     new_snap.bonds.types = None
                 new_snap.bonds.group = self._bond_array
                 if self.aniso_beads:
-                    new_snap.particles.orientations = self._orientation_array
+                    new_snap.particles.orientation = orientation
                 new_snap.bonds.typeid = np.array(bond_ids)
                 new_snap.bonds.type_shapes = bond_type_shapes
                 new.append(new_snap)
