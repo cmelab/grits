@@ -196,16 +196,13 @@ class CG_Compound(Compound):
                     heavy_positions = bead_xyz[np.where(masses > hmass)]
                     major_axis, ab_idxs = get_major_axis(heavy_positions)
                     orientation = get_quaternion(major_axis)
+                    orientations.append(orientation)
                 bead = Bead(name=name,
                             pos=avg_xyz,
                             smarts=smarts,
                             mass=tot_mass,
                             orientation=orientation,)
-                orientations.append(orientation)
-                print(f'appended {orientation} to orientations')
                 self.add(bead)
-        self._orientation_array = np.array(orientations)
-        print(self._orientation_array)
 
     def _cg_bonds(self):
         """Set the bonds in the coarse structure."""
@@ -511,7 +508,6 @@ class CG_System:
         self._inds = []
         self._bond_array = None
         self.aniso_beads = aniso_beads
-        self._orientation_array = None
 
         if beads is not None:
             # get compounds
@@ -705,7 +701,7 @@ class CG_System:
                 new_snap = gsd.hoomd.Snapshot()
                 position = []
                 mass = []
-                orientation = []
+                orientation = [] if self.aniso_beads else None
                 f_box = freud.Box.from_box(s.configuration.box)
                 unwrap_pos = f_box.unwrap(
                     s.particles.position, s.particles.image
@@ -722,11 +718,11 @@ class CG_System:
                             heavy_positions = f_box.wrap(heavy_positions)
                             major_axis, ab_idxs = get_major_axis(heavy_positions)
                             orientation.append(get_quaternion(major_axis))
+                        orientation = np.vstack(orientation)
                     
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
-                orientation = np.vstack(orientation)
 
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
