@@ -10,6 +10,11 @@ from grits import CG_Compound, CG_System
 from grits.utils import amber_dict
 
 asset_dir = path.join(path.dirname(__file__), "assets")
+propyl = 'CCC'
+benzyl = 'c1ccccc1'
+p3ht_backbone = 'c1sccc1'
+itic_backbone = 'c1c2Cc3c4sccc4sc3c2cc5Cc6c7sccc7sc6c15'
+itic_end = 'c1cccc2c1C(=O)C(=C)C2=C(C#N)C#N'
 
 
 class Test_CGCompound(BaseTest):
@@ -27,7 +32,7 @@ class Test_CGCompound(BaseTest):
         assert np.isclose(cg_methane.mass, 12.011)
 
     def test_initp3ht(self, p3ht):
-        cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
+        cg_beads = {"_B": p3ht_backbone, "_S": propyl}
 
         cg_p3ht = CG_Compound(p3ht, cg_beads)
 
@@ -42,7 +47,7 @@ class Test_CGCompound(BaseTest):
         assert np.isclose(cg_p3ht[17].mass, 36.033)
 
     def test_initp3htoverlap(self, p3ht):
-        cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
+        cg_beads = {"_B": p3ht_backbone, "_S": propyl}
 
         cg_p3ht = CG_Compound(p3ht, cg_beads, allow_overlap=True)
 
@@ -76,13 +81,13 @@ class Test_CGCompound(BaseTest):
         assert len(types) == 1
 
     def test_notfoundsmarts(self, methane):
-        cg_beads = {"_A": "CCC"}
+        cg_beads = {"_A": propyl}
 
         with pytest.warns(UserWarning):
             CG_Compound(methane, cg_beads)
 
     def test_atomsleftout(self, p3ht):
-        cg_beads = {"_S": "CCC"}
+        cg_beads = {"_S": propyl}
 
         with pytest.warns(UserWarning):
             CG_Compound(p3ht, cg_beads)
@@ -111,7 +116,7 @@ class Test_CGSystem(BaseTest):
         gsdfile = path.join(asset_dir, "p3ht.gsd")
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1cscc1", "_S": "CCC"},
+            beads={"_B": p3ht_backbone, "_S": propyl},
             conversion_dict=amber_dict,
         )
 
@@ -136,7 +141,7 @@ class Test_CGSystem(BaseTest):
         gsdfile = path.join(asset_dir, "p3ht-noH.gsd")
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1cscc1", "_S": "CCC"},
+            beads={"_B": p3ht_backbone, "_S": propyl},
             conversion_dict=amber_dict,
             add_hydrogens=True,
         )
@@ -156,7 +161,7 @@ class Test_CGSystem(BaseTest):
             init_mass = sum(traj[0].particles.mass)
         system = CG_System(
             gsdfile,
-            beads={"_A": "c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5", "_B": "c1cscc1", "_S": "CCC"},
+            beads={"_A": itic_backbone, "_B": itic_end, "_C": p3ht_backbone, "_S1": benzyl, "_S2": propyl},
             conversion_dict=amber_dict,
             mass_scale=2.0
         )
@@ -171,12 +176,13 @@ class Test_CGSystem(BaseTest):
         gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
         system = CG_System(
             gsdfile,
-            beads={"_A": "c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5", "_B": "c1cscc1"},
+            beads={"_A": itic_backbone, "_B": itic_end, "_C": p3ht_backbone, "_S1": benzyl, "_S2": propyl},
             conversion_dict=amber_dict,
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+        assert len(system.mapping[f"_A...{itic_backbone}"]) == 10
+        assert len(system.mapping[f"_B...{itic_end}"]) == 20
 
         cg_gsd = tmp_path / "cg-itic-p3ht.gsd"
         system.save(cg_gsd)
@@ -192,7 +198,8 @@ class Test_CGSystem(BaseTest):
 
         assert isinstance(map_system.mapping, dict)
         assert (
-            len(map_system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+            len(map_system.mapping[f"_A...{itic_backbone}"]) == 10,
+            len(map_system.mapping[f"_B...{itic_end}"]) == 20
         )
 
         map_cg_gsd = tmp_path / "map-cg-itic-p3ht.gsd"
