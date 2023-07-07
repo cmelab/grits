@@ -599,6 +599,7 @@ class CG_System:
 
         def shift_value(i):
             n_before, n_bead = order[types[i]]
+            print(f"In shift value, n_before is {n_before}, and n_bead is {n_bead}")
             return (
                 n_comps * n_before
                 + (i - n_before)
@@ -609,7 +610,7 @@ class CG_System:
         v_shift = np.vectorize(shift_value)
 
         self.mapping = {}
-        all_bonds = []
+        all_bonds = [] 
         bead_count = 0
         for comp, inds in zip(self._compounds, self._inds):
             # Map particles
@@ -626,6 +627,7 @@ class CG_System:
             )
 
             types = [p.name for p in comp.particles()]
+            print("types is ", types, f"({len(types)})")
             n_comps = len(inds)
             # Check that bond array exists
             if bond_array.size > 0:
@@ -635,6 +637,7 @@ class CG_System:
                 comp_bonds = []
                 for comp_idx in range(n_comps):
                     comp_bonds.append(v_shift(bond_array))
+                    print(f"appended {comp_bonds[-1]}")
                 all_bonds += comp_bonds
             bead_count += n_comps * len(types)
 
@@ -690,7 +693,9 @@ class CG_System:
         N_bonds = 0
         if self._bond_array is not None:
             N_bonds = self._bond_array.shape[0]
+            print("N_bonds is ", N_bonds)
             for bond in self._bond_array:
+                print("bond is ", bond)
                 bond_pair = "-".join(
                     [
                         types[int(typeid[int(bond[0])])],
