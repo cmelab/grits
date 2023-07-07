@@ -10,6 +10,11 @@ from grits import CG_Compound, CG_System
 from grits.utils import amber_dict
 
 asset_dir = path.join(path.dirname(__file__), "assets")
+propyl = 'CCC'
+benzyl = 'c1ccccc1'
+p3ht_backbone = 'c1sccc1'
+itic_backbone = 'c1c2Cc3c4sccc4sc3c2cc5Cc6c7sccc7sc6c15'
+itic_end = 'c1cccc2c1C(=O)C(=C)C2=C(C#N)C#N'
 
 
 class Test_CGCompound(BaseTest):
@@ -27,7 +32,7 @@ class Test_CGCompound(BaseTest):
         assert np.isclose(cg_methane.mass, 16.043, atol=1e-5)
 
     def test_initp3ht(self, p3ht):
-        cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
+        cg_beads = {"_B": p3ht_backbone, "_S": propyl}
 
         cg_p3ht = CG_Compound(p3ht, cg_beads)
 
@@ -42,7 +47,7 @@ class Test_CGCompound(BaseTest):
         assert np.isclose(cg_p3ht[17].mass, 43.089, atol=1e-5)
 
     def test_initp3htoverlap(self, p3ht):
-        cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
+        cg_beads = {"_B": p3ht_backbone, "_S": propyl}
 
         cg_p3ht = CG_Compound(p3ht, cg_beads, allow_overlap=True)
 
@@ -76,13 +81,13 @@ class Test_CGCompound(BaseTest):
         assert len(types) == 1
 
     def test_notfoundsmarts(self, methane):
-        cg_beads = {"_A": "CCC"}
+        cg_beads = {"_A": propyl}
 
         with pytest.warns(UserWarning):
             CG_Compound(methane, cg_beads)
 
     def test_atomsleftout(self, p3ht):
-        cg_beads = {"_S": "CCC"}
+        cg_beads = {"_S": propyl}
 
         with pytest.warns(UserWarning):
             CG_Compound(p3ht, cg_beads)
