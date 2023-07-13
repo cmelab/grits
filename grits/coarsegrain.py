@@ -205,7 +205,13 @@ class CG_Compound(Compound):
                     # filter out hydrogens
                     hmass = element_from_symbol('H').mass
                     heavy_positions = bead_xyz[np.where(masses > hmass)]
-                    major_axis, ab_idxs = get_major_axis(heavy_positions)
+                    if len(heavy_positions) > 2:
+                        major_axis, _ = get_major_axis(heavy_positions)
+                    elif len(heavy_positions) == 2:
+                        major_axis = heavy_positions[1] - heavy_positions[0]
+                    else: #only one atom in a bead -> default orientation
+                        # TODO: something nicer than this?
+                        major_axis = None
                     orientation = get_quaternion(major_axis)
                     orientations.append(orientation)
                 bead = Bead(name=name,
@@ -585,6 +591,7 @@ class CG_System:
             self._compounds.append(
                 CG_Compound(
                     compound=mb_comp,
+                    allow_overlap=allow_overlap,
                     beads=beads,
                     add_hydrogens=add_hydrogens,
                     aniso_beads=aniso_beads,
@@ -599,7 +606,6 @@ class CG_System:
 
         def shift_value(i):
             n_before, n_bead = order[types[i]]
-            print(f"In shift value, n_before is {n_before}, and n_bead is {n_bead}")
             return (
                 n_comps * n_before
                 + (i - n_before)
@@ -627,7 +633,6 @@ class CG_System:
             )
 
             types = [p.name for p in comp.particles()]
-            print("types is ", types, f"({len(types)})")
             n_comps = len(inds)
             # Check that bond array exists
             if bond_array.size > 0:
@@ -637,7 +642,6 @@ class CG_System:
                 comp_bonds = []
                 for comp_idx in range(n_comps):
                     comp_bonds.append(v_shift(bond_array))
-                    print(f"appended {comp_bonds[-1]}")
                 all_bonds += comp_bonds
             bead_count += n_comps * len(types)
 
@@ -693,9 +697,7 @@ class CG_System:
         N_bonds = 0
         if self._bond_array is not None:
             N_bonds = self._bond_array.shape[0]
-            print("N_bonds is ", N_bonds)
             for bond in self._bond_array:
-                print("bond is ", bond)
                 bond_pair = "-".join(
                     [
                         types[int(typeid[int(bond[0])])],
@@ -738,8 +740,9 @@ class CG_System:
                             heavy_positions = f_box.wrap(heavy_positions)
                             major_axis, ab_idxs = get_major_axis(heavy_positions)
                             orientation.append(get_quaternion(major_axis))
-                        orientation = np.vstack(orientation)
-                    
+
+                if self.aniso_beads:
+                    orientation = np.vstack(orientation)
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
