@@ -342,6 +342,8 @@ def get_quaternion(n1, n0=np.array([0, 0, 1])):
             of a quaternion.
     '''
 
+    if n1 is None:# one atom in this bead -> default quaternion
+        return np.array([0,0,0,1])
     V_axis = np.cross(n0, n1)
     theta_numerator = np.dot(n0, n1)
     theta_denominator = np.linalg.norm(n0) * np.linalg.norm(n1)
