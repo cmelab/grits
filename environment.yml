@@ -14,5 +14,5 @@ dependencies:
   - py3Dmol
   - pytest
   - pytest-cov
-  - python=3.8
+  - python=3.10
   - rdkit
