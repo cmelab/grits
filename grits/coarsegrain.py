@@ -460,7 +460,8 @@ class CG_System:
         mapping=None,
         allow_overlap=False,
         conversion_dict=None,
-        scale=1.0,
+        length_scale=1.0,
+        mass_scale=1.0,
         add_hydrogens=False,
     ):
         if (beads is None) == (mapping is None):
@@ -475,7 +476,12 @@ class CG_System:
         if beads is not None:
             # get compounds
             self._get_compounds(
-                beads, allow_overlap, scale, conversion_dict, add_hydrogens
+                beads=beads,
+                allow_overlap=allow_overlap,
+                length_scale=length_scale,
+                mass_scale=mass_scale,
+                conversion_dict=conversion_dict,
+                add_hydrogens=add_hydrogens
             )
 
             # calculate the bead mappings for the entire trajectory
@@ -487,7 +493,13 @@ class CG_System:
             self.mapping = mapping
 
     def _get_compounds(
-        self, beads, allow_overlap, scale, conversion_dict, add_hydrogens
+        self,
+        beads,
+        allow_overlap,
+        length_scale,
+        mass_scale,
+        conversion_dict,
+        add_hydrogens
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -514,9 +526,15 @@ class CG_System:
         # Convert each unique molecule to a compound
         for inds in uniq_mol_inds:
             l = len(inds)
+            mb_comp = comp_from_snapshot(
+                    snapshot=snap,
+                    indices=inds,
+                    length_scale=length_scale,
+                    mass_scale=mass_scale
+            )
             self._compounds.append(
                 CG_Compound(
-                    comp_from_snapshot(snap, inds, scale=scale),
+                    compound=mb_comp,
                     beads=beads,
                     add_hydrogens=add_hydrogens,
                 )

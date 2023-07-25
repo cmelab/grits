@@ -25,7 +25,7 @@ class NumpyEncoder(json.JSONEncoder):
             return super(NumpyEncoder, self).default(obj)
 
 
-def comp_from_snapshot(snapshot, indices, scale=1.0):
+def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
     """Convert particles by indices from a Snapshot to a Compound.
 
     Parameters
@@ -34,9 +34,10 @@ def comp_from_snapshot(snapshot, indices, scale=1.0):
         Snapshot from which to build the mbuild Compound.
     indices : np.ndarray
         Indices of the particles to be added to the compound.
-    scale : float, default 1.0
+    length_scale : float, default 1.0
         Value by which to scale the length values
-
+    mass_scale : float, default 1.0
+        Value by which to scale the mass values
     Returns
     -------
     comp : mbuild.Compound
@@ -53,7 +54,7 @@ def comp_from_snapshot(snapshot, indices, scale=1.0):
     # gsd / hoomd v3
     box = np.asarray(snapshot.configuration.box)
     comp.box = Box.from_lengths_tilt_factors(
-        lengths=box[:3] * scale, tilt_factors=box[3:]
+        lengths=box[:3] * length_scale, tilt_factors=box[3:]
     )
 
     # GSD and HOOMD snapshots center their boxes on the origin (0,0,0)
@@ -63,9 +64,10 @@ def comp_from_snapshot(snapshot, indices, scale=1.0):
     for i in range(n_atoms):
         if i in indices:
             name = snapshot.particles.types[snapshot.particles.typeid[i]]
-            xyz = snapshot.particles.position[i] * scale + shift
+            xyz = snapshot.particles.position[i] * length_scale + shift
+            mass = snapshot.particles.mass[i] * mass_scale
 
-            atom = Particle(name=name, pos=xyz)
+            atom = Particle(name=name, pos=xyz, mass=mass)
             comp.add(atom, label=str(i))
             particle_dict[i] = atom
 
