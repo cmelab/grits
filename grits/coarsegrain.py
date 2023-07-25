@@ -723,7 +723,6 @@ class CG_System:
                             hmass = element_from_symbol('H').mass
                             positions = s.particles.position[x]
                             heavy_positions = positions[np.where(masses > hmass / self.mass_scale)]
-                            heavy_positions = f_box.wrap(heavy_positions)
                             major_axis, ab_idxs = get_major_axis(heavy_positions)
                             orientation.append(get_quaternion(major_axis))
 
