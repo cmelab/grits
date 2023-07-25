@@ -528,6 +528,7 @@ class CG_System:
         self._bond_array = None
         self.mass_scale = mass_scale
         self.aniso_beads = aniso_beads
+        self.mass_scale = mass_scale
 
         if beads is not None:
             # get compounds
@@ -736,7 +737,7 @@ class CG_System:
                             masses = s.particles.mass[x] * self.mass_scale
                             hmass = element_from_symbol('H').mass
                             positions = s.particles.position[x]
-                            heavy_positions = positions[np.where(masses > hmass)]
+                            heavy_positions = positions[np.where(masses > hmass / self.mass_scale)]
                             heavy_positions = f_box.wrap(heavy_positions)
                             major_axis, ab_idxs = get_major_axis(heavy_positions)
                             orientation.append(get_quaternion(major_axis))
