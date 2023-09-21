@@ -649,13 +649,13 @@ class CG_System:
                 _id = np.where(np.array(bond_types) == bond_pair)[0]
                 bond_ids.append(_id)
 
-        with gsd.hoomd.open(cg_gsdfile, "wb") as new, gsd.hoomd.open(
-            self.gsdfile, "rb"
+        with gsd.hoomd.open(cg_gsdfile, "w") as new, gsd.hoomd.open(
+            self.gsdfile, "r"
         ) as old:
             if stop is None:
                 stop = len(old)
             for s in old[start:stop]:
-                new_snap = gsd.hoomd.Snapshot()
+                new_snap = gsd.hoomd.Frame()
                 position = []
                 mass = []
                 f_box = freud.Box.from_box(s.configuration.box)
