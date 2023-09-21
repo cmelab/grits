@@ -151,19 +151,19 @@ class Test_CGSystem(BaseTest):
         system.save_mapping(cg_json)
 
     def test_mass_scale(self, tmp_path):
-        gsdfile = path.join(asset_dir, "p3ht.gsd")
-        with gsd.hoomd.open(gsdfile, "rb") as traj:
+        gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
+        with gsd.hoomd.open(gsdfile, "r") as traj:
             init_mass = sum(traj[0].particles.mass)
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1cscc1", "_S": "CCC"},
+            beads={"_A": "c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5", "_B": "c1cscc1"},
             conversion_dict=amber_dict,
             mass_scale=2.0
         )
 
-        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        cg_gsd = tmp_path / "cg-itic-p3ht.gsd"
         system.save(cg_gsd)
-        with gsd.hoomd.open(cg_gsd, "rb") as cg_traj:
+        with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
             cg_mass = sum(cg_traj[0].particles.mass)
         assert np.allclose(cg_mass, init_mass*2, 1e-2)
 
