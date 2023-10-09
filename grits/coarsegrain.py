@@ -481,7 +481,7 @@ class CG_System:
                 length_scale=length_scale,
                 mass_scale=mass_scale,
                 conversion_dict=conversion_dict,
-                add_hydrogens=add_hydrogens
+                add_hydrogens=add_hydrogens,
             )
 
             # calculate the bead mappings for the entire trajectory
@@ -499,7 +499,7 @@ class CG_System:
         length_scale,
         mass_scale,
         conversion_dict,
-        add_hydrogens
+        add_hydrogens,
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -527,10 +527,10 @@ class CG_System:
         for inds in uniq_mol_inds:
             l = len(inds)
             mb_comp = comp_from_snapshot(
-                    snapshot=snap,
-                    indices=inds,
-                    length_scale=length_scale,
-                    mass_scale=mass_scale
+                snapshot=snap,
+                indices=inds,
+                length_scale=length_scale,
+                mass_scale=mass_scale,
             )
             self._compounds.append(
                 CG_Compound(

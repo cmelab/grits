@@ -158,14 +158,14 @@ class Test_CGSystem(BaseTest):
             gsdfile,
             beads={"_B": "c1cscc1", "_S": "CCC"},
             conversion_dict=amber_dict,
-            mass_scale=2.0
+            mass_scale=2.0,
         )
 
         cg_gsd = tmp_path / "cg-p3ht.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd, "rb") as cg_traj:
             cg_mass = sum(cg_traj[0].particles.mass)
-        assert np.allclose(cg_mass, init_mass*2, 1e-2)
+        assert np.allclose(cg_mass, init_mass * 2, 1e-2)
 
     def test_iticp3ht(self, tmp_path):
         gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
