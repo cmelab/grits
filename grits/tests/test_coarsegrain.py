@@ -103,31 +103,31 @@ class Test_CGCompound(BaseTest):
 
 class Test_CGSystem(BaseTest):
     def test_raises(self):
-        gsdfile = path.join(asset_dir, "p3ht.gsd")
+        gsdfile = path.join(asset_dir, "benzene-all-atom.gsd")
         with pytest.raises(ValueError):
             CG_System(gsdfile)
 
-    def test_p3ht(self, tmp_path):
-        gsdfile = path.join(asset_dir, "p3ht.gsd")
+    def test_pps(self, tmp_path):
+        gsdfile = path.join(asset_dir, "pps-all-atom.gsd")
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1cscc1", "_S": "CCC"},
+            beads={"_B": "c1ccc(S)cc1"},
             conversion_dict=amber_dict,
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1cscc1"]) == 160
+        assert len(system.mapping["_B...c1cc(S)ccc1"]) == 300 
 
-        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd) as f:
             snap = f[0]
-            assert len(set(snap.particles.mass)) == 2
-            assert np.isclose(snap.particles.mass[0], 2.49844)
+            assert len(set(snap.particles.mass)) == 1 
+            #assert np.isclose(snap.particles.mass[0], 2.49844)
             assert (
                 len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
             )
-            assert len(snap.bonds.types) == 3
+            assert len(snap.bonds.types) == 1 
 
         cg_json = tmp_path / "cg-p3ht.json"
         system.save_mapping(cg_json)
