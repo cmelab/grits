@@ -24,7 +24,7 @@ class Test_CGCompound(BaseTest):
         types = set([i.name for i in cg_methane.particles()])
         assert "_A" in types
         assert len(types) == 1
-        assert np.isclose(cg_methane.mass, 12.011)
+        assert np.isclose(cg_methane.mass, 16.043, atol=1e-5)
 
     def test_initp3ht(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
@@ -38,8 +38,8 @@ class Test_CGCompound(BaseTest):
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
-        assert np.isclose(cg_p3ht[0].mass, 80.104)
-        assert np.isclose(cg_p3ht[17].mass, 36.033)
+        assert np.isclose(cg_p3ht[0].mass, 82.12, atol=1e-5)
+        assert np.isclose(cg_p3ht[17].mass, 43.089, atol=1e-5)
 
     def test_initp3htoverlap(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
