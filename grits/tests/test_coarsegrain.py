@@ -188,12 +188,11 @@ class Test_CGSystem(BaseTest):
             gsdfile,
             beads={"_B": "c1ccccc1"},
             conversion_dict=amber_dict,
-            mass_scale=2.0
+            mass_scale=12.011
         )
-        for comp in system._compounds:
-            assert np.allclose(78.11*2, comp.mass, atol=1e-4)
-        #cg_gsd = tmp_path / "cg-pps-scaled.gsd"
-        #system.save(cg_gsd)
-        #with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
-        #    cg_mass = sum(cg_traj[0].particles.mass)
-        #assert np.allclose(cg_mass, init_mass*2, 1e-2)
+        assert np.allclose(system._compounds[0].mass, 78.11, atol=1e-2) 
+        cg_gsd = tmp_path / "cg-benzene-scaled.gsd"
+        system.save(cg_gsd)
+        with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
+            cg_mass = sum(cg_traj[0].particles.mass)
+        assert np.allclose(cg_mass, 20*78.11, atol=1)

@@ -481,6 +481,7 @@ class CG_System:
         self._compounds = []
         self._inds = []
         self._bond_array = None
+        self.mass_scale = mass_scale
 
         if beads is not None:
             # get compounds
@@ -488,7 +489,6 @@ class CG_System:
                 beads=beads,
                 allow_overlap=allow_overlap,
                 length_scale=length_scale,
-                mass_scale=mass_scale,
                 conversion_dict=conversion_dict,
                 add_hydrogens=add_hydrogens
             )
@@ -506,7 +506,6 @@ class CG_System:
         beads,
         allow_overlap,
         length_scale,
-        mass_scale,
         conversion_dict,
         add_hydrogens
     ):
@@ -539,7 +538,7 @@ class CG_System:
                     snapshot=snap,
                     indices=inds,
                     length_scale=length_scale,
-                    mass_scale=mass_scale
+                    mass_scale=self.mass_scale
             )
             self._compounds.append(
                 CG_Compound(
@@ -673,7 +672,7 @@ class CG_System:
                 )
                 for i, inds in enumerate(self.mapping.values()):
                     position += [np.mean(unwrap_pos[x], axis=0) for x in inds]
-                    mass += [sum(s.particles.mass[x]) for x in inds]
+                    mass += [sum(s.particles.mass[x]) * self.mass_scale for x in inds]
 
                 position = np.vstack(position)
                 images = f_box.get_images(position)
