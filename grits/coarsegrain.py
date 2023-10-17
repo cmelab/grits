@@ -490,7 +490,7 @@ class CG_System:
                 allow_overlap=allow_overlap,
                 length_scale=length_scale,
                 conversion_dict=conversion_dict,
-                add_hydrogens=add_hydrogens
+                add_hydrogens=add_hydrogens,
             )
 
             # calculate the bead mappings for the entire trajectory
@@ -507,7 +507,7 @@ class CG_System:
         allow_overlap,
         length_scale,
         conversion_dict,
-        add_hydrogens
+        add_hydrogens,
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping

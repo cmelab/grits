@@ -194,3 +194,41 @@ class Test_CGSystem(BaseTest):
         with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
             cg_mass = sum(cg_traj[0].particles.mass)
         assert np.allclose(cg_mass, 20*78.11, atol=1)
+
+    def test_iticp3ht(self, tmp_path):
+        gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_A": "c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5", "_B": "c1cscc1"},
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+
+        cg_gsd = tmp_path / "cg-itic-p3ht.gsd"
+        system.save(cg_gsd)
+
+        cg_json = tmp_path / "cg-itic-p3ht.json"
+        system.save_mapping(cg_json)
+
+        map_system = CG_System(
+            gsdfile,
+            mapping=cg_json,
+            conversion_dict=amber_dict,
+        )
+
+        assert isinstance(map_system.mapping, dict)
+        assert (
+            len(map_system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
+        )
+
+        map_cg_gsd = tmp_path / "map-cg-itic-p3ht.gsd"
+        system.save(map_cg_gsd)
+
+        with gsd.hoomd.open(map_cg_gsd) as t_map, gsd.hoomd.open(cg_gsd) as t:
+            map_s = t_map[0]
+            s = t[0]
+            assert s.particles.N == 170
+            assert np.all(s.particles.position == map_s.particles.position)
+>>>>>>> 35e82bdb51df30db84529f6b866935d5d8b6dae1
