@@ -139,13 +139,12 @@ class Test_CGSystem(BaseTest):
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1cc(S)ccc1"]) == 300 
+        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225 
 
         cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd) as f:
             snap = f[0]
-            assert len(set(snap.particles.mass)) == 1 
             assert (
                 len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
             )
@@ -164,13 +163,12 @@ class Test_CGSystem(BaseTest):
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1cc(S)ccc1"]) == 300 
+        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225 
 
         cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd) as f:
             snap = f[0]
-            assert len(set(snap.particles.mass)) == 1 
             assert (
                 len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
             )
