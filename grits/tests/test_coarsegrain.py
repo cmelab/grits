@@ -115,17 +115,17 @@ class Test_CGSystem(BaseTest):
             conversion_dict=amber_dict,
         )
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1ccccc1"]) == 20 
+        assert len(system.mapping["_B...c1ccccc1"]) == 20
 
         cg_gsd = tmp_path / "cg-benzene.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd) as f:
             snap = f[0]
-            assert len(set(snap.particles.mass)) == 1 
+            assert len(set(snap.particles.mass)) == 1
             assert (
-                len(snap.bonds.typeid) == len(snap.bonds.group) == 0 
+                len(snap.bonds.typeid) == len(snap.bonds.group) == 0
             )
-            assert len(snap.bonds.types) == 0 
+            assert len(snap.bonds.types) == 0
 
         cg_json = tmp_path / "cg-benzene.json"
         system.save_mapping(cg_json)
@@ -139,7 +139,7 @@ class Test_CGSystem(BaseTest):
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225 
+        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225
 
         cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
@@ -148,7 +148,7 @@ class Test_CGSystem(BaseTest):
             assert (
                 len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
             )
-            assert len(snap.bonds.types) == 1 
+            assert len(snap.bonds.types) == 1
 
         cg_json = tmp_path / "cg-pps.json"
         system.save_mapping(cg_json)
@@ -163,7 +163,7 @@ class Test_CGSystem(BaseTest):
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225 
+        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225
 
         cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
@@ -172,7 +172,7 @@ class Test_CGSystem(BaseTest):
             assert (
                 len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
             )
-            assert len(snap.bonds.types) == 1 
+            assert len(snap.bonds.types) == 1
 
         cg_json = tmp_path / "cg-pps.json"
         system.save_mapping(cg_json)
@@ -188,7 +188,7 @@ class Test_CGSystem(BaseTest):
             conversion_dict=amber_dict,
             mass_scale=12.011
         )
-        assert np.allclose(system._compounds[0].mass, 78.11, atol=1e-2) 
+        assert np.allclose(system._compounds[0].mass, 78.11, atol=1e-2)
         cg_gsd = tmp_path / "cg-benzene-scaled.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd, "r") as cg_traj:

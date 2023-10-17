@@ -141,11 +141,13 @@ class CG_Compound(Compound):
                 warn(f"{smart_str} not found in compound!")
             for group in smarts.findall(mol):
                 group = tuple(i - 1 for i in group)
-                _group = list(group) 
+                _group = list(group)
                 for p_idx in group:
                     for particle in self.atomistic[p_idx].direct_bonds():
                         if particle.element == ele.element_from_symbol("H"):
-                            h_idx = int(np.where(particle_ids == id(particle))[0][0])
+                            h_idx = int(
+                                np.where(particle_ids == id(particle))[0][0]
+                            )
                             _group.append(h_idx)
                 group = tuple(_group)
                 matches.append((group, smart_str, bead_name))
@@ -535,10 +537,10 @@ class CG_System:
         for inds in uniq_mol_inds:
             l = len(inds)
             mb_comp = comp_from_snapshot(
-                    snapshot=snap,
-                    indices=inds,
-                    length_scale=length_scale,
-                    mass_scale=self.mass_scale
+                snapshot=snap,
+                indices=inds,
+                length_scale=length_scale,
+                mass_scale=self.mass_scale,
             )
             self._compounds.append(
                 CG_Compound(
@@ -672,7 +674,9 @@ class CG_System:
                 )
                 for i, inds in enumerate(self.mapping.values()):
                     position += [np.mean(unwrap_pos[x], axis=0) for x in inds]
-                    mass += [sum(s.particles.mass[x]) * self.mass_scale for x in inds]
+                    mass += [
+                        sum(s.particles.mass[x]) * self.mass_scale for x in inds
+                    ]
 
                 position = np.vstack(position)
                 images = f_box.get_images(position)
