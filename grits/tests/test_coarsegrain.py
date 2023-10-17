@@ -122,9 +122,7 @@ class Test_CGSystem(BaseTest):
         with gsd.hoomd.open(cg_gsd) as f:
             snap = f[0]
             assert len(set(snap.particles.mass)) == 1
-            assert (
-                len(snap.bonds.typeid) == len(snap.bonds.group) == 0
-            )
+            assert len(snap.bonds.typeid) == len(snap.bonds.group) == 0
             assert len(snap.bonds.types) == 0
 
         cg_json = tmp_path / "cg-benzene.json"
@@ -159,7 +157,7 @@ class Test_CGSystem(BaseTest):
             gsdfile,
             beads={"_B": "c1ccc(S)cc1"},
             conversion_dict=amber_dict,
-            add_hydrogens=True
+            add_hydrogens=True,
         )
 
         assert isinstance(system.mapping, dict)
@@ -186,11 +184,11 @@ class Test_CGSystem(BaseTest):
             gsdfile,
             beads={"_B": "c1ccccc1"},
             conversion_dict=amber_dict,
-            mass_scale=12.011
+            mass_scale=12.011,
         )
         assert np.allclose(system._compounds[0].mass, 78.11, atol=1e-2)
         cg_gsd = tmp_path / "cg-benzene-scaled.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
             cg_mass = sum(cg_traj[0].particles.mass)
-        assert np.allclose(cg_mass, 20*78.11, atol=1)
+        assert np.allclose(cg_mass, 20 * 78.11, atol=1)
