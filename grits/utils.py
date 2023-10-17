@@ -25,20 +25,19 @@ class NumpyEncoder(json.JSONEncoder):
             return super(NumpyEncoder, self).default(obj)
 
 
-def comp_from_snapshot(snapshot, indices, scale=1.0, shift_coords=True):
+def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
     """Convert particles by indices from a Snapshot to a Compound.
 
     Parameters
     ----------
-    snapshot : gsd.hoomd.Snapshot
+    snapshot : gsd.hoomd.Frame
         Snapshot from which to build the mbuild Compound.
     indices : np.ndarray
         Indices of the particles to be added to the compound.
-    scale : float, default 1.0
+    length_scale : float, default 1.0
         Value by which to scale the length values
-    shift_coords : bool, default True
-        Whether to shift the coords by half the box lengths
-
+    mass_scale : float, default 1.0
+        Value by which to scale the mass values
     Returns
     -------
     comp : mbuild.Compound
@@ -55,7 +54,7 @@ def comp_from_snapshot(snapshot, indices, scale=1.0, shift_coords=True):
     # gsd / hoomd v3
     box = np.asarray(snapshot.configuration.box)
     comp.box = Box.from_lengths_tilt_factors(
-        lengths=box[:3] * scale, tilt_factors=box[3:]
+        lengths=box[:3] * length_scale, tilt_factors=box[3:]
     )
 
     if shift_coords:
@@ -68,9 +67,10 @@ def comp_from_snapshot(snapshot, indices, scale=1.0, shift_coords=True):
     for i in range(n_atoms):
         if i in indices:
             name = snapshot.particles.types[snapshot.particles.typeid[i]]
-            xyz = snapshot.particles.position[i] * scale + shift
-
-            atom = Particle(name=name, pos=xyz)
+            xyz = snapshot.particles.position[i] * length_scale + shift
+            mass = snapshot.particles.mass[i] * mass_scale
+            element = ele.element_from_symbol(name)
+            atom = Particle(name=name, pos=xyz, mass=mass, element=element)
             comp.add(atom, label=str(i))
             particle_dict[i] = atom
 
@@ -82,7 +82,7 @@ def comp_from_snapshot(snapshot, indices, scale=1.0, shift_coords=True):
 
 
 def snap_molecules(snap):
-    """Get the molecule indices based on bonding in a gsd.hoomd.Snapshot."""
+    """Get the molecule indices based on bonding in a gsd.hoomd.Frame."""
     system = freud.AABBQuery.from_system(snap)
     n_query_points = n_points = snap.particles.N
     query_point_indices = snap.bonds.group[:, 0]

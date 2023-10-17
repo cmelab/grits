@@ -24,7 +24,7 @@ class Test_CGCompound(BaseTest):
         types = set([i.name for i in cg_methane.particles()])
         assert "_A" in types
         assert len(types) == 1
-        assert np.isclose(cg_methane.mass, 12.011)
+        assert np.isclose(cg_methane.mass, 16.043, atol=1e-5)
 
     def test_initp3ht(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
@@ -38,8 +38,8 @@ class Test_CGCompound(BaseTest):
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
-        assert np.isclose(cg_p3ht[0].mass, 80.104)
-        assert np.isclose(cg_p3ht[17].mass, 36.033)
+        assert np.isclose(cg_p3ht[0].mass, 82.12, atol=1e-5)
+        assert np.isclose(cg_p3ht[17].mass, 43.089, atol=1e-5)
 
     def test_initp3htoverlap(self, p3ht):
         cg_beads = {"_B": "c1sccc1", "_S": "CCC"}
@@ -103,82 +103,92 @@ class Test_CGCompound(BaseTest):
 
 class Test_CGSystem(BaseTest):
     def test_raises(self):
-        gsdfile = path.join(asset_dir, "p3ht.gsd")
+        gsdfile = path.join(asset_dir, "benzene-aa.gsd")
         with pytest.raises(ValueError):
             CG_System(gsdfile)
 
-    def test_p3ht(self, tmp_path):
-        gsdfile = path.join(asset_dir, "p3ht.gsd")
+    def test_benzene(self, tmp_path):
+        gsdfile = path.join(asset_dir, "benzene-aa.gsd")
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1cscc1", "_S": "CCC"},
+            beads={"_B": "c1ccccc1"},
+            conversion_dict=amber_dict,
+        )
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_B...c1ccccc1"]) == 20
+
+        cg_gsd = tmp_path / "cg-benzene.gsd"
+        system.save(cg_gsd)
+        with gsd.hoomd.open(cg_gsd) as f:
+            snap = f[0]
+            assert len(set(snap.particles.mass)) == 1
+            assert len(snap.bonds.typeid) == len(snap.bonds.group) == 0
+            assert len(snap.bonds.types) == 0
+
+        cg_json = tmp_path / "cg-benzene.json"
+        system.save_mapping(cg_json)
+
+    def test_pps(self, tmp_path):
+        gsdfile = path.join(asset_dir, "pps-aa.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1ccc(S)cc1"},
             conversion_dict=amber_dict,
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1cscc1"]) == 160
+        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225
 
-        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
         with gsd.hoomd.open(cg_gsd) as f:
             snap = f[0]
-            assert len(set(snap.particles.mass)) == 2
-            assert np.isclose(snap.particles.mass[0], 2.49844)
+            assert (
+                len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
+            )
+            assert len(snap.bonds.types) == 1
 
-        cg_json = tmp_path / "cg-p3ht.json"
+        cg_json = tmp_path / "cg-pps.json"
         system.save_mapping(cg_json)
 
-    def test_p3ht_noh(self, tmp_path):
-        gsdfile = path.join(asset_dir, "p3ht-noH.gsd")
+    def test_pps_noH(self, tmp_path):
+        gsdfile = path.join(asset_dir, "pps-ua.gsd")
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1cscc1", "_S": "CCC"},
+            beads={"_B": "c1ccc(S)cc1"},
             conversion_dict=amber_dict,
             add_hydrogens=True,
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1cscc1"]) == 160
+        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225
 
-        cg_gsd = tmp_path / "cg-p3ht.gsd"
+        cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
+        with gsd.hoomd.open(cg_gsd) as f:
+            snap = f[0]
+            assert (
+                len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
+            )
+            assert len(snap.bonds.types) == 1
 
-        cg_json = tmp_path / "cg-p3ht.json"
+        cg_json = tmp_path / "cg-pps.json"
         system.save_mapping(cg_json)
 
-    def test_iticp3ht(self, tmp_path):
-        gsdfile = path.join(asset_dir, "itic-p3ht.gsd")
+    def test_mass_scale(self, tmp_path):
+        gsdfile = path.join(asset_dir, "benzene-aa.gsd")
+        with gsd.hoomd.open(gsdfile, "r") as traj:
+            init_mass = sum(traj[0].particles.mass)
+
         system = CG_System(
             gsdfile,
-            beads={"_A": "c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5", "_B": "c1cscc1"},
+            beads={"_B": "c1ccccc1"},
             conversion_dict=amber_dict,
+            mass_scale=12.011,
         )
-
-        assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
-
-        cg_gsd = tmp_path / "cg-itic-p3ht.gsd"
+        assert np.allclose(system._compounds[0].mass, 78.11, atol=1e-2)
+        cg_gsd = tmp_path / "cg-benzene-scaled.gsd"
         system.save(cg_gsd)
-
-        cg_json = tmp_path / "cg-itic-p3ht.json"
-        system.save_mapping(cg_json)
-
-        map_system = CG_System(
-            gsdfile,
-            mapping=cg_json,
-            conversion_dict=amber_dict,
-        )
-
-        assert isinstance(map_system.mapping, dict)
-        assert (
-            len(map_system.mapping["_A...c1c4c(cc2c1Cc3c2scc3)Cc5c4scc5"]) == 10
-        )
-
-        map_cg_gsd = tmp_path / "map-cg-itic-p3ht.gsd"
-        system.save(map_cg_gsd)
-
-        with gsd.hoomd.open(map_cg_gsd) as t_map, gsd.hoomd.open(cg_gsd) as t:
-            map_s = t_map[0]
-            s = t[0]
-            assert s.particles.N == 170
-            assert np.all(s.particles.position == map_s.particles.position)
+        with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
+            cg_mass = sum(cg_traj[0].particles.mass)
+        assert np.allclose(cg_mass, 20 * 78.11, atol=1)

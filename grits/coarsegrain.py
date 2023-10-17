@@ -5,6 +5,7 @@ import tempfile
 from collections import defaultdict
 from warnings import catch_warnings, simplefilter, warn
 
+import ele
 import freud
 import gsd.hoomd
 import numpy as np
@@ -132,6 +133,7 @@ class CG_Compound(Compound):
 
     def _set_mapping(self, beads, mol, allow_overlap):
         """Set the mapping attribute."""
+        particle_ids = np.array([id(p) for p in self.atomistic.particles()])
         matches = []
         for bead_name, smart_str in beads.items():
             smarts = pybel.Smarts(smart_str)
@@ -139,6 +141,15 @@ class CG_Compound(Compound):
                 warn(f"{smart_str} not found in compound!")
             for group in smarts.findall(mol):
                 group = tuple(i - 1 for i in group)
+                _group = list(group)
+                for p_idx in group:
+                    for particle in self.atomistic[p_idx].direct_bonds():
+                        if particle.element == ele.element_from_symbol("H"):
+                            h_idx = int(
+                                np.where(particle_ids == id(particle))[0][0]
+                            )
+                            _group.append(h_idx)
+                group = tuple(_group)
                 matches.append((group, smart_str, bead_name))
 
         seen = set()
@@ -437,8 +448,10 @@ class CG_System:
         Whether to allow beads representing ring structures to share atoms.
     conversion_dict : dictionary, default None
         Dictionary to map particle types to their element.
-    scale : float, default 1.0
+    length_scale : float, default 1.0
         Factor by which to scale length values.
+    mass__scale : float, default 1.0
+        Factor by which to scale mass values.
     add_hydrogens : bool, default False
         Whether to add hydrogens. Useful for united-atom models.
 
@@ -460,7 +473,8 @@ class CG_System:
         mapping=None,
         allow_overlap=False,
         conversion_dict=None,
-        scale=1.0,
+        length_scale=1.0,
+        mass_scale=1.0,
         add_hydrogens=False,
     ):
         if (beads is None) == (mapping is None):
@@ -471,11 +485,16 @@ class CG_System:
         self._compounds = []
         self._inds = []
         self._bond_array = None
+        self.mass_scale = mass_scale
 
         if beads is not None:
             # get compounds
             self._get_compounds(
-                beads, allow_overlap, scale, conversion_dict, add_hydrogens
+                beads=beads,
+                allow_overlap=allow_overlap,
+                length_scale=length_scale,
+                conversion_dict=conversion_dict,
+                add_hydrogens=add_hydrogens,
             )
 
             # calculate the bead mappings for the entire trajectory
@@ -487,7 +506,12 @@ class CG_System:
             self.mapping = mapping
 
     def _get_compounds(
-        self, beads, allow_overlap, scale, conversion_dict, add_hydrogens
+        self,
+        beads,
+        allow_overlap,
+        length_scale,
+        conversion_dict,
+        add_hydrogens,
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -514,9 +538,15 @@ class CG_System:
         # Convert each unique molecule to a compound
         for inds in uniq_mol_inds:
             l = len(inds)
+            mb_comp = comp_from_snapshot(
+                snapshot=snap,
+                indices=inds,
+                length_scale=length_scale,
+                mass_scale=self.mass_scale,
+            )
             self._compounds.append(
                 CG_Compound(
-                    comp_from_snapshot(snap, inds, scale=scale),
+                    compound=mb_comp,
                     beads=beads,
                     add_hydrogens=add_hydrogens,
                 )
@@ -593,7 +623,7 @@ class CG_System:
         Retains:
             - configuration: box, step
             - particles: N, position, typeid, types
-            - bonds: N, group
+            - bonds: N, group, typeid, types
 
         Parameters
         ----------
@@ -607,30 +637,52 @@ class CG_System:
             Where to stop reading the gsd trajectory the system was created
             with. If None, will stop at the last frame.
         """
-        with gsd.hoomd.open(cg_gsdfile, "wb") as new, gsd.hoomd.open(
-            self.gsdfile, "rb"
+        typeid = []
+        types = [i.split("...")[0] for i in self.mapping]
+        for i, inds in enumerate(self.mapping.values()):
+            typeid.append(np.ones(len(inds)) * i)
+        typeid = np.hstack(typeid)
+
+        # Set up bond information if it exists
+        bond_types = []
+        bond_ids = []
+        N_bonds = 0
+        if self._bond_array is not None:
+            N_bonds = self._bond_array.shape[0]
+            for bond in self._bond_array:
+                bond_pair = "-".join(
+                    [
+                        types[int(typeid[int(bond[0])])],
+                        types[int(typeid[int(bond[1])])],
+                    ]
+                )
+                if bond_pair not in bond_types:
+                    bond_types.append(bond_pair)
+                _id = np.where(np.array(bond_types) == bond_pair)[0]
+                bond_ids.append(_id)
+
+        with gsd.hoomd.open(cg_gsdfile, "w") as new, gsd.hoomd.open(
+            self.gsdfile, "r"
         ) as old:
             if stop is None:
                 stop = len(old)
             for s in old[start:stop]:
-                new_snap = gsd.hoomd.Snapshot()
+                new_snap = gsd.hoomd.Frame()
                 position = []
                 mass = []
                 f_box = freud.Box.from_box(s.configuration.box)
                 unwrap_pos = f_box.unwrap(
                     s.particles.position, s.particles.image
                 )
-                types = [i.split("...")[0] for i in self.mapping]
-                typeid = []
                 for i, inds in enumerate(self.mapping.values()):
-                    typeid.append(np.ones(len(inds)) * i)
                     position += [np.mean(unwrap_pos[x], axis=0) for x in inds]
-                    mass += [sum(s.particles.mass[x]) for x in inds]
+                    mass += [
+                        sum(s.particles.mass[x]) * self.mass_scale for x in inds
+                    ]
 
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
-                typeid = np.hstack(typeid)
 
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
@@ -640,7 +692,9 @@ class CG_System:
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
-                if self._bond_array is not None:
-                    new_snap.bonds.N = self._bond_array.shape[0]
+                if N_bonds > 0:
+                    new_snap.bonds.N = N_bonds
                     new_snap.bonds.group = self._bond_array
+                    new_snap.bonds.types = np.array(bond_types)
+                    new_snap.bonds.typeid = np.array(bond_ids)
                 new.append(new_snap)

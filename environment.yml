@@ -3,8 +3,8 @@ channels:
   - conda-forge
 dependencies:
   - ele
-  - freud
-  - gsd
+  - freud>=2.13.1
+  - gsd>=3.0
   - jupyterlab
   - mbuild
   - numpy
@@ -14,5 +14,5 @@ dependencies:
   - py3Dmol
   - pytest
   - pytest-cov
-  - python=3.8
+  - python=3.10
   - rdkit
