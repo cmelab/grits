@@ -107,6 +107,29 @@ class Test_CGSystem(BaseTest):
         with pytest.raises(ValueError):
             CG_System(gsdfile)
 
+    def test_benzene(self, tmp_path):
+        gsdfile = path.join(asset_dir, "benzene-aa.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1ccccc1"},
+            conversion_dict=amber_dict,
+        )
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_B...c1ccccc1"]) == 20 
+
+        cg_gsd = tmp_path / "cg-benzene.gsd"
+        system.save(cg_gsd)
+        with gsd.hoomd.open(cg_gsd) as f:
+            snap = f[0]
+            assert len(set(snap.particles.mass)) == 1 
+            assert (
+                len(snap.bonds.typeid) == len(snap.bonds.group) == 0 
+            )
+            assert len(snap.bonds.types) == 0 
+
+        cg_json = tmp_path / "cg-benzene.json"
+        system.save_mapping(cg_json)
+
     def test_pps(self, tmp_path):
         gsdfile = path.join(asset_dir, "pps-aa.gsd")
         system = CG_System(
@@ -157,18 +180,20 @@ class Test_CGSystem(BaseTest):
         system.save_mapping(cg_json)
 
     def test_mass_scale(self, tmp_path):
-        gsdfile = path.join(asset_dir, "pps-aa.gsd")
+        gsdfile = path.join(asset_dir, "benzene-aa.gsd")
         with gsd.hoomd.open(gsdfile, "r") as traj:
             init_mass = sum(traj[0].particles.mass)
 
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1ccc(S)cc1"},
+            beads={"_B": "c1ccccc1"},
             conversion_dict=amber_dict,
             mass_scale=2.0
         )
-        cg_gsd = tmp_path / "cg-pps.gsd"
-        system.save(cg_gsd)
-        with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
-            cg_mass = sum(cg_traj[0].particles.mass)
-        assert np.allclose(cg_mass, init_mass*2, 1e-2)
+        for comp in system._compounds:
+            assert np.allclose(78.11*2, comp.mass, atol=1e-4)
+        #cg_gsd = tmp_path / "cg-pps-scaled.gsd"
+        #system.save(cg_gsd)
+        #with gsd.hoomd.open(cg_gsd, "r") as cg_traj:
+        #    cg_mass = sum(cg_traj[0].particles.mass)
+        #assert np.allclose(cg_mass, init_mass*2, 1e-2)

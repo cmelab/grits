@@ -687,8 +687,9 @@ class CG_System:
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
-                new_snap.bonds.N = N_bonds
-                new_snap.bonds.group = self._bond_array
-                new_snap.bonds.types = np.array(bond_types)
-                new_snap.bonds.typeid = np.array(bond_ids)
+                if N_bonds > 0:
+                    new_snap.bonds.N = N_bonds
+                    new_snap.bonds.group = self._bond_array
+                    new_snap.bonds.types = np.array(bond_types)
+                    new_snap.bonds.typeid = np.array(bond_ids)
                 new.append(new_snap)
