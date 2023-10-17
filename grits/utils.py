@@ -30,7 +30,7 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
 
     Parameters
     ----------
-    snapshot : gsd.hoomd.Snapshot
+    snapshot : gsd.hoomd.Frame
         Snapshot from which to build the mbuild Compound.
     indices : np.ndarray
         Indices of the particles to be added to the compound.
@@ -66,8 +66,8 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
             name = snapshot.particles.types[snapshot.particles.typeid[i]]
             xyz = snapshot.particles.position[i] * length_scale + shift
             mass = snapshot.particles.mass[i] * mass_scale
-
-            atom = Particle(name=name, pos=xyz, mass=mass)
+            element = ele.element_from_symbol(name)
+            atom = Particle(name=name, pos=xyz, mass=mass, element=element)
             comp.add(atom, label=str(i))
             particle_dict[i] = atom
 
@@ -79,7 +79,7 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
 
 
 def snap_molecules(snap):
-    """Get the molecule indices based on bonding in a gsd.hoomd.Snapshot."""
+    """Get the molecule indices based on bonding in a gsd.hoomd.Frame."""
     system = freud.AABBQuery.from_system(snap)
     n_query_points = n_points = snap.particles.N
     query_point_indices = snap.bonds.group[:, 0]
