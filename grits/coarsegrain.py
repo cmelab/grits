@@ -448,8 +448,10 @@ class CG_System:
         Whether to allow beads representing ring structures to share atoms.
     conversion_dict : dictionary, default None
         Dictionary to map particle types to their element.
-    scale : float, default 1.0
+    length_scale : float, default 1.0
         Factor by which to scale length values.
+    mass__scale : float, default 1.0
+        Factor by which to scale mass values.
     add_hydrogens : bool, default False
         Whether to add hydrogens. Useful for united-atom models.
 
