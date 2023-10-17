@@ -5,6 +5,7 @@ import tempfile
 from collections import defaultdict
 from warnings import catch_warnings, simplefilter, warn
 
+import ele
 import freud
 import gsd.hoomd
 import numpy as np
@@ -132,6 +133,7 @@ class CG_Compound(Compound):
 
     def _set_mapping(self, beads, mol, allow_overlap):
         """Set the mapping attribute."""
+        particle_ids = np.array([id(p) for p in self.atomistic.particles()])
         matches = []
         for bead_name, smart_str in beads.items():
             smarts = pybel.Smarts(smart_str)
@@ -139,6 +141,13 @@ class CG_Compound(Compound):
                 warn(f"{smart_str} not found in compound!")
             for group in smarts.findall(mol):
                 group = tuple(i - 1 for i in group)
+                _group = list(group) 
+                for p_idx in group:
+                    for particle in self.atomistic[p_idx].direct_bonds():
+                        if particle.element == ele.element_from_symbol("H"):
+                            h_idx = int(np.where(particle_ids == id(particle))[0][0])
+                            _group.append(h_idx)
+                group = tuple(_group)
                 matches.append((group, smart_str, bead_name))
 
         seen = set()
