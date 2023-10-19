@@ -7,12 +7,12 @@ dependencies:
   - gsd>=3.0
   - jupyterlab
   - mbuild
-  - numpy
+  - ele
+  - freud
   - openbabel
   - pip
   - pre-commit
   - py3Dmol
   - pytest
   - pytest-cov
-  - python=3.10
   - rdkit
