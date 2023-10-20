@@ -9,20 +9,20 @@ import ele
 import freud
 import gsd.hoomd
 import numpy as np
+from ele import element_from_symbol
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
 from openbabel import pybel
-from ele import element_from_symbol
 
 from grits.utils import (
     NumpyEncoder,
     comp_from_snapshot,
     get_bonds,
+    get_major_axis,
+    get_quaternion,
     has_common_member,
     has_number,
     snap_molecules,
-    get_major_axis,
-    get_quaternion,
 )
 
 __all__ = ["CG_Compound", "CG_System", "Bead"]
@@ -203,22 +203,24 @@ class CG_Compound(Compound):
                 orientation = None
                 if self.aniso_beads:
                     # filter out hydrogens
-                    hmass = element_from_symbol('H').mass
+                    hmass = element_from_symbol("H").mass
                     heavy_positions = bead_xyz[np.where(masses > hmass)]
                     if len(heavy_positions) > 2:
                         major_axis, _ = get_major_axis(heavy_positions)
                     elif len(heavy_positions) == 2:
                         major_axis = heavy_positions[1] - heavy_positions[0]
-                    else: #only one atom in a bead -> default orientation
+                    else:  # only one atom in a bead -> default orientation
                         # TODO: something nicer than this?
                         major_axis = None
                     orientation = get_quaternion(major_axis)
                     orientations.append(orientation)
-                bead = Bead(name=name,
-                            pos=avg_xyz,
-                            smarts=smarts,
-                            mass=tot_mass,
-                            orientation=orientation,)
+                bead = Bead(
+                    name=name,
+                    pos=avg_xyz,
+                    smarts=smarts,
+                    mass=tot_mass,
+                    orientation=orientation,
+                )
                 self.add(bead)
 
     def _cg_bonds(self):
@@ -538,7 +540,7 @@ class CG_System:
                 length_scale=length_scale,
                 conversion_dict=conversion_dict,
                 add_hydrogens=add_hydrogens,
-                aniso_beads=aniso_beads
+                aniso_beads=aniso_beads,
             )
 
             # calculate the bead mappings for the entire trajectory
@@ -556,7 +558,7 @@ class CG_System:
         length_scale,
         conversion_dict,
         add_hydrogens,
-        aniso_beads
+        aniso_beads,
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -617,7 +619,7 @@ class CG_System:
         v_shift = np.vectorize(shift_value)
 
         self.mapping = {}
-        all_bonds = [] 
+        all_bonds = []
         bead_count = 0
         for comp, inds in zip(self._compounds, self._inds):
             # Map particles
@@ -735,10 +737,14 @@ class CG_System:
                     if self.aniso_beads:
                         for x in inds:
                             masses = s.particles.mass[x] * self.mass_scale
-                            hmass = element_from_symbol('H').mass
+                            hmass = element_from_symbol("H").mass
                             positions = s.particles.position[x]
-                            heavy_positions = positions[np.where(masses > hmass / self.mass_scale)]
-                            major_axis, ab_idxs = get_major_axis(heavy_positions)
+                            heavy_positions = positions[
+                                np.where(masses > hmass / self.mass_scale)
+                            ]
+                            major_axis, ab_idxs = get_major_axis(
+                                heavy_positions
+                            )
                             orientation.append(get_quaternion(major_axis))
 
                 if self.aniso_beads:
