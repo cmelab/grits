@@ -1,8 +1,8 @@
 from os import path
 
+import gsd.hoomd
 import mbuild as mb
 import pytest
-import gsd.hoomd
 
 from grits import CG_Compound
 
