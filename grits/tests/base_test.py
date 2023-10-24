@@ -2,6 +2,7 @@ from os import path
 
 import mbuild as mb
 import pytest
+import gsd.hoomd
 
 from grits import CG_Compound
 
@@ -60,3 +61,10 @@ class BaseTest:
     def cg_alkane(self, alkane):
         cg_chain = CG_Compound(alkane, {"_A": "CCC"})
         return cg_chain
+
+    @pytest.fixture
+    def butane_gsd(self, tmpdir):
+        molecule = mb.load("CCCC", smiles=True)
+        filename = tmpdir.mkdir("sub").join("butane.gsd")
+        molecule.save(filename)
+        return gsd.hoomd.open(filename)
