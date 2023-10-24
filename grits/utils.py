@@ -1,10 +1,11 @@
 """Utility functions for GRiTS."""
 import json
 import re
-import rowan
+
 import ele
 import freud
 import numpy as np
+import rowan
 from ele import element_from_symbol
 from mbuild.box import Box
 from mbuild.compound import Compound, Particle
@@ -212,6 +213,7 @@ def get_index(compound, particle):
     """
     return [p for p in compound].index(particle)
 
+
 def get_heavy_atoms(particles):
     """Returns arrays of only heavy atoms given
        a gsd.frame.particles object. Used in Aniso mapping.
@@ -236,8 +238,9 @@ def get_heavy_atoms(particles):
     heavy_partmass = partmass[heavy_atom_indicies]
     return heavy_partpos, heavy_partmass
 
+
 def get_major_axis(positions_arr):
-    '''Finds the major axis for GB CG representation for use in axis-angle
+    """Finds the major axis for GB CG representation for use in axis-angle
     orientation representation.
 
     Parameters
@@ -254,23 +257,24 @@ def get_major_axis(positions_arr):
             array designating vector of major axis of Gay-Berne particle
         particle_indicies : tuple of ints
             tuple of two particle indices used to calculate major axis vector
-    '''
+    """
     major_axis = None
     max_dist = 0
     AB_indicies = (None, None)
     for i, x0 in enumerate(positions_arr):
-        for j, x1 in enumerate(positions_arr[i+1:]):
+        for j, x1 in enumerate(positions_arr[i + 1 :]):
             vect = x1 - x0
             dist = np.linalg.norm(vect)
             if dist > max_dist:
                 max_dist = dist
                 major_axis = vect
                 # adjust j for loop stride
-                AB_indicies = (i, j+i+1)
+                AB_indicies = (i, j + i + 1)
     return major_axis, AB_indicies
 
+
 def get_com(particle_positions, particle_masses):
-    '''Calculate center of mass coordinates given a set of
+    """Calculate center of mass coordinates given a set of
        particle positions and masses.
        Positions and Masses arrays must be of same dimension.
 
@@ -285,15 +289,16 @@ def get_com(particle_positions, particle_masses):
     -------
         center_of_mass : numpy array
             3x0 numpy array of center of mass coordinates
-    '''
+    """
 
     M = np.sum(particle_masses)
-    weighted_positions = particle_positions * particle_masses[:,np.newaxis]
-    center_of_mass = np.sum(weighted_positions/M, axis=0)
+    weighted_positions = particle_positions * particle_masses[:, np.newaxis]
+    center_of_mass = np.sum(weighted_positions / M, axis=0)
     return center_of_mass
 
+
 def get_minor_axis(particle_positions, center_of_mass, AB_indicies):
-    '''Finds the minor axis for GB CG representation for use in axis-angle
+    """Finds the minor axis for GB CG representation for use in axis-angle
     orientation representation.
 
     Parameters
@@ -308,7 +313,7 @@ def get_minor_axis(particle_positions, center_of_mass, AB_indicies):
     -------
         CoM_vector : numpy array
             Center of mass vector calculated to serve as minor axis
-    '''
+    """
 
     AB = particle_positions[AB_indicies[1]] - particle_positions[AB_indicies[0]]
     CoM_vector = None
@@ -318,13 +323,17 @@ def get_minor_axis(particle_positions, center_of_mass, AB_indicies):
             continue
         quatvect = vect0 - center_of_mass
         dist = np.linalg.norm(quatvect)
-        if dist > maxdist and not np.isclose(np.cross(AB, quatvect), np.zeros(3)).all():
+        if (
+            dist > maxdist
+            and not np.isclose(np.cross(AB, quatvect), np.zeros(3)).all()
+        ):
             maxdist = dist
             CoM_vector = quatvect
     return CoM_vector
 
+
 def get_quaternion(n1, n0=np.array([0, 0, 1])):
-    '''Calculates axis and angle of rotation given
+    """Calculates axis and angle of rotation given
        two planes normal vectors, which is then used
        to calculate the quaternions.
 
@@ -340,16 +349,17 @@ def get_quaternion(n1, n0=np.array([0, 0, 1])):
         quaternion : numpy array
             numpy array that tells the position of the monomer in units
             of a quaternion.
-    '''
+    """
 
-    if n1 is None:# one atom in this bead -> default quaternion
-        return np.array([0,0,0,1])
+    if n1 is None:  # one atom in this bead -> default quaternion
+        return np.array([0, 0, 0, 1])
     V_axis = np.cross(n0, n1)
     theta_numerator = np.dot(n0, n1)
     theta_denominator = np.linalg.norm(n0) * np.linalg.norm(n1)
     theta_rotation = np.arccos(theta_numerator / theta_denominator)
     quaternion = rowan.from_axis_angle(V_axis, theta_rotation)
     return quaternion
+
 
 def get_hydrogen(compound, particle):
     """Get the first hydrogen attached to particle.
