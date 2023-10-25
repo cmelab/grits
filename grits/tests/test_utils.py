@@ -22,24 +22,25 @@ def test_get_hydrogen():
 
 
 def test_get_com():
-    from grits.utils import get_com
     import numpy as np
 
-    pos_arr = np.zeros([4,3])
+    from grits.utils import get_com
+
+    pos_arr = np.zeros([4, 3])
     mass_arr = np.ones(4)
 
     # square
-    pos_arr[0] = np.array([0,1,1])
-    pos_arr[1] = np.array([0,1,-1])
-    pos_arr[2] = np.array([0,-1,1])
-    pos_arr[3] = np.array([0,-1,-1])
+    pos_arr[0] = np.array([0, 1, 1])
+    pos_arr[1] = np.array([0, 1, -1])
+    pos_arr[2] = np.array([0, -1, 1])
+    pos_arr[3] = np.array([0, -1, -1])
     assert np.allclose(get_com(pos_arr, mass_arr), np.zeros(3))
 
     # line
-    pos_arr[0] = np.array([0,2,2])
-    pos_arr[1] = np.array([0,1,1])
-    pos_arr[2] = np.array([0,-2,-2])
-    pos_arr[3] = np.array([0,-1,-1])
+    pos_arr[0] = np.array([0, 2, 2])
+    pos_arr[1] = np.array([0, 1, 1])
+    pos_arr[2] = np.array([0, -2, -2])
+    pos_arr[3] = np.array([0, -1, -1])
     assert np.allclose(get_com(pos_arr, mass_arr), np.zeros(3))
 
     # biased line
@@ -47,6 +48,7 @@ def test_get_com():
     mass_arr[1] = 10
     com = get_com(pos_arr, mass_arr)
     assert com[1] > 0 and com[2] > 0
+
 
 class TestAnisoUtils(BaseTest):
     def test_get_heavy_atoms(self, butane_gsd):
