@@ -31,6 +31,22 @@ class Test_CGCompound(BaseTest):
         assert len(types) == 1
         assert np.isclose(cg_methane.mass, 16.043, atol=1e-5)
 
+    def test_initanisomethane(self, methane):
+        cg_beads = {"_A": "C"}
+
+        cg_methane = CG_Compound(methane, cg_beads, aniso_beads=True)
+
+        assert cg_methane.n_particles == 1
+        assert isinstance(cg_methane, CG_Compound)
+
+        types = set([i.name for i in cg_methane.particles()])
+        assert "_A" in types
+        assert len(types) == 1
+        assert np.isclose(cg_methane.mass, 16.043, atol=1e-5)
+        # in methane we expect all default orientations
+        for particle in cg_methane.particles():
+            assert np.allclose(particle.orientation, np.array([0,0,0,1]))
+
     def test_initp3ht(self, p3ht):
         cg_beads = {"_B": p3ht_backbone, "_S": propyl}
 
@@ -46,6 +62,24 @@ class Test_CGCompound(BaseTest):
         assert np.isclose(cg_p3ht[0].mass, 82.12, atol=1e-5)
         assert np.isclose(cg_p3ht[17].mass, 43.089, atol=1e-5)
 
+    def test_initanisop3ht(self, p3ht):
+        cg_beads = {"_B": p3ht_backbone, "_S": propyl}
+
+        cg_p3ht = CG_Compound(p3ht, cg_beads, aniso_beads=True)
+
+        assert cg_p3ht.n_particles == 48
+        assert isinstance(cg_p3ht, CG_Compound)
+
+        types = set([i.name for i in cg_p3ht.particles()])
+        assert "_B" in types
+        assert "_S" in types
+        assert len(types) == 2
+        assert np.isclose(cg_p3ht[0].mass, 82.12, atol=1e-5)
+        assert np.isclose(cg_p3ht[17].mass, 43.089, atol=1e-5)
+        # larger beads should have non-default orientations
+        for particle in cg_p3ht.particles():
+            assert not np.allclose(particle.orientation, np.array([0,0,0,1]))
+
     def test_initp3htoverlap(self, p3ht):
         cg_beads = {"_B": p3ht_backbone, "_S": propyl}
 
@@ -59,6 +93,21 @@ class Test_CGCompound(BaseTest):
         assert "_S" in types
         assert len(types) == 2
 
+    def test_initanisop3htoverlap(self, p3ht):
+        cg_beads = {"_B": p3ht_backbone, "_S": propyl}
+
+        cg_p3ht = CG_Compound(p3ht, cg_beads, allow_overlap=True, aniso_beads=True)
+
+        assert cg_p3ht.n_particles == 48
+        assert isinstance(cg_p3ht, CG_Compound)
+
+        types = set([i.name for i in cg_p3ht.particles()])
+        assert "_B" in types
+        assert "_S" in types
+        assert len(types) == 2
+        for particle in cg_p3ht.particles():
+            assert not np.allclose(particle.orientation, np.array([0,0,0,1]))
+
     def test_initmapp3ht(self, p3ht, p3ht_mapping):
         cg_p3ht = CG_Compound(p3ht, mapping=p3ht_mapping)
 
@@ -70,6 +119,19 @@ class Test_CGCompound(BaseTest):
         assert "_S" in types
         assert len(types) == 2
 
+    def test_initmapanisop3ht(self, p3ht, p3ht_mapping):
+        cg_p3ht = CG_Compound(p3ht, mapping=p3ht_mapping, aniso_beads=True)
+
+        assert cg_p3ht.n_particles == 48
+        assert isinstance(cg_p3ht, CG_Compound)
+
+        types = set([i.name for i in cg_p3ht.particles()])
+        assert "_B" in types
+        assert "_S" in types
+        assert len(types) == 2
+        for particle in cg_p3ht.particles():
+            assert not np.allclose(particle.orientation, np.array([0,0,0,1]))
+
     def test_initmapmethane(self, methane, methane_mapping):
         cg_methane = CG_Compound(methane, mapping=methane_mapping)
 
@@ -79,6 +141,18 @@ class Test_CGCompound(BaseTest):
         types = set([i.name for i in cg_methane.particles()])
         assert "_A" in types
         assert len(types) == 1
+
+    def test_initmapanisomethane(self, methane, methane_mapping):
+        cg_methane = CG_Compound(methane, mapping=methane_mapping, aniso_beads=True)
+
+        assert cg_methane.n_particles == 1
+        assert isinstance(cg_methane, CG_Compound)
+
+        types = set([i.name for i in cg_methane.particles()])
+        assert "_A" in types
+        assert len(types) == 1
+        for particle in cg_methane.particles():
+            assert np.allclose(particle.orientation, np.array([0,0,0,1]))
 
     def test_notfoundsmarts(self, methane):
         cg_beads = {"_A": propyl}

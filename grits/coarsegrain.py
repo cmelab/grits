@@ -209,8 +209,7 @@ class CG_Compound(Compound):
                         major_axis, _ = get_major_axis(heavy_positions)
                     elif len(heavy_positions) == 2:
                         major_axis = heavy_positions[1] - heavy_positions[0]
-                    else:  # only one atom in a bead -> default orientation
-                        # TODO: something nicer than this?
+                    else:
                         major_axis = None
                     orientation = get_quaternion(major_axis)
                     orientations.append(orientation)
