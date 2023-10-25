@@ -295,6 +295,7 @@ def get_com(particle_positions, particle_masses):
     center_of_mass = np.sum(weighted_positions / M, axis=0)
     return center_of_mass
 
+
 def get_quaternion(n1, n0=np.array([0, 0, 1])):
     """Calculates axis and angle of rotation given
        two planes normal vectors, which is then used

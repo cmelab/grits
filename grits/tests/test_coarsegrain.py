@@ -217,7 +217,7 @@ class Test_CGSystem(BaseTest):
             gsdfile,
             beads={"_B": "c1ccccc1"},
             conversion_dict=amber_dict,
-            aniso_beads=True
+            aniso_beads=True,
         )
         assert isinstance(system.mapping, dict)
         assert len(system.mapping["_B...c1ccccc1"]) == 20
