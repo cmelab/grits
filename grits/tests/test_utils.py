@@ -1,5 +1,6 @@
 from base_test import BaseTest
 
+
 def test_num2str():
     from grits.utils import num2str
 
@@ -19,10 +20,13 @@ def test_get_hydrogen():
     methane = load("C", smiles=True)
     assert isinstance(get_hydrogen(methane, methane[0]), Compound)
 
+
 class TestAnisoUtils(BaseTest):
     def test_get_heavy_atoms(self, butane_gsd):
-        from grits.utils import get_heavy_atoms
         import gsd.hoomd
+
+        from grits.utils import get_heavy_atoms
+
         with butane_gsd as f:
             assert type(f) == gsd.hoomd.HOOMDTrajectory
             frame = f[0]
