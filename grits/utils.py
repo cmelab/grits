@@ -290,47 +290,10 @@ def get_com(particle_positions, particle_masses):
         center_of_mass : numpy array
             3x0 numpy array of center of mass coordinates
     """
-
     M = np.sum(particle_masses)
     weighted_positions = particle_positions * particle_masses[:, np.newaxis]
     center_of_mass = np.sum(weighted_positions / M, axis=0)
     return center_of_mass
-
-
-def get_minor_axis(particle_positions, center_of_mass, AB_indicies):
-    """Finds the minor axis for GB CG representation for use in axis-angle
-    orientation representation.
-
-    Parameters
-    ----------
-        particle_positions : numpy array
-            N_particlesx3 numpy array of particle positions
-            to map to one aniso bead.
-        center_of_mass : numpy array
-            3x0 numpy array containing xyz coordinates for center of mass
-
-    Returns
-    -------
-        CoM_vector : numpy array
-            Center of mass vector calculated to serve as minor axis
-    """
-
-    AB = particle_positions[AB_indicies[1]] - particle_positions[AB_indicies[0]]
-    CoM_vector = None
-    maxdist = 0
-    for i, vect0 in enumerate(particle_positions):
-        if i in AB_indicies:
-            continue
-        quatvect = vect0 - center_of_mass
-        dist = np.linalg.norm(quatvect)
-        if (
-            dist > maxdist
-            and not np.isclose(np.cross(AB, quatvect), np.zeros(3)).all()
-        ):
-            maxdist = dist
-            CoM_vector = quatvect
-    return CoM_vector
-
 
 def get_quaternion(n1, n0=np.array([0, 0, 1])):
     """Calculates axis and angle of rotation given
@@ -350,7 +313,6 @@ def get_quaternion(n1, n0=np.array([0, 0, 1])):
             numpy array that tells the position of the monomer in units
             of a quaternion.
     """
-
     if n1 is None:  # one atom in this bead -> default quaternion
         return np.array([0, 0, 0, 1])
     V_axis = np.cross(n0, n1)
