@@ -39,6 +39,7 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
         Value by which to scale the length values
     mass_scale : float, default 1.0
         Value by which to scale the mass values
+
     Returns
     -------
     comp : mbuild.Compound
@@ -215,8 +216,10 @@ def get_index(compound, particle):
 
 
 def get_heavy_atoms(particles):
-    """Returns arrays of only heavy atoms given
-       a gsd.frame.particles object. Used in Aniso mapping.
+    """Filter out hydrogens for axis-angle calculation.
+
+    Returns arrays of only heavy atoms' positions and masses,
+    given a gsd.frame.particles object. Used in Aniso mapping.
 
     Parameters
     ----------
@@ -240,8 +243,9 @@ def get_heavy_atoms(particles):
 
 
 def get_major_axis(positions_arr):
-    """Finds the major axis for GB CG representation for use in axis-angle
-    orientation representation.
+    """Find the major axis for GB CG representation.
+
+    Used in axis-angle orientation representation.
 
     Parameters
     ----------
@@ -274,9 +278,11 @@ def get_major_axis(positions_arr):
 
 
 def get_com(particle_positions, particle_masses):
-    """Calculate center of mass coordinates given a set of
-       particle positions and masses.
-       Positions and Masses arrays must be of same dimension.
+    """Calculate center of mass coordinates.
+
+       Given a set of particle positions and masses, find
+       their center of mass.
+       Arrays must be of same dimension.
 
     Parameters
     ----------
@@ -296,9 +302,11 @@ def get_com(particle_positions, particle_masses):
     return center_of_mass
 
 def get_quaternion(n1, n0=np.array([0, 0, 1])):
-    """Calculates axis and angle of rotation given
-       two planes normal vectors, which is then used
-       to calculate the quaternions.
+    """Calculate rotation quaternion from axis vectors.
+
+    Calculate axis and angle of rotation given
+    two planes' normal vectors, which is then used
+    to calculate the quaternions for HOOMD.
 
     Parameters
     ----------
@@ -307,6 +315,7 @@ def get_quaternion(n1, n0=np.array([0, 0, 1])):
         n0 : numpy array
             numpy array that is used to define the default quaternion.
             Defaults to the Z-axis.
+
     Returns
     -------
         quaternion : numpy array
