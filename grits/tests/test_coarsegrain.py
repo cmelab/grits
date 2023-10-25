@@ -207,6 +207,29 @@ class Test_CGSystem(BaseTest):
         cg_json = tmp_path / "cg-benzene.json"
         system.save_mapping(cg_json)
 
+    def test_anisobenzene(self, tmp_path):
+        gsdfile = path.join(asset_dir, "benzene-aa.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1ccccc1"},
+            conversion_dict=amber_dict,
+            aniso_beads=True
+        )
+        assert isinstance(system.mapping, dict)
+        assert len(system.mapping["_B...c1ccccc1"]) == 20
+
+        cg_gsd = tmp_path / "cg-anisobenzene.gsd"
+        system.save(cg_gsd)
+        with gsd.hoomd.open(cg_gsd) as f:
+            snap = f[0]
+            assert len(set(snap.particles.mass)) == 1
+            assert len(snap.bonds.typeid) == len(snap.bonds.group) == 0
+            assert len(snap.bonds.types) == 0
+            assert len(snap.particles.orientation) == 20
+
+        cg_json = tmp_path / "cg-anisobenzene.json"
+        system.save_mapping(cg_json)
+
     def test_pps(self, tmp_path):
         gsdfile = path.join(asset_dir, "pps-aa.gsd")
         system = CG_System(
