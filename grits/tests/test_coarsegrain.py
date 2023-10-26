@@ -14,7 +14,7 @@ propyl = "CCC"
 benzyl = "c1ccccc1"
 p3ht_backbone = "c1sccc1"
 itic_backbone = "c1c2Cc3c4sccc4sc3c2cc5Cc6c7sccc7sc6c15"
-itic_end = "c1cccc2c1c(=o)c(=c*)c2=c(c#n)c#n"  #'[c,C]1[c,C]2[c,C][c,C]3[c,C]4[s,S][c,C][c,C][c,C]4[s,S][c,C]3[c,C]2[c,C][c,C]5[c,C][c,C]6[c,C]7[s,S][c,C][c,C][c,C]7[s,S][c,C]6[c,C]15'
+itic_end = "c1cccc2c1c(=o)c(=c*)c2=c(c#n)c#n"
 
 
 class Test_CGCompound(BaseTest):
