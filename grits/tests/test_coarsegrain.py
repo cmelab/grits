@@ -196,7 +196,7 @@ class Test_CGSystem(BaseTest):
             gsdfile,
             beads={"_B": "c1ccccc1"},
             conversion_dict=amber_dict,
-            mass_scale=12.011
+            mass_scale=12.011,
         )
         assert isinstance(system.mapping, dict)
         assert len(system.mapping["_B...c1ccccc1"]) == 20
@@ -208,7 +208,7 @@ class Test_CGSystem(BaseTest):
             assert len(set(snap.particles.mass)) == 1
             assert len(snap.bonds.typeid) == len(snap.bonds.group) == 0
             assert len(snap.bonds.types) == 0
-            assert np.allclose(sum(snap.particles.mass), 20*78.11, atol=1e-1)
+            assert np.allclose(sum(snap.particles.mass), 20 * 78.11, atol=1e-1)
 
         cg_json = tmp_path / "cg-benzene.json"
         system.save_mapping(cg_json)
@@ -220,7 +220,7 @@ class Test_CGSystem(BaseTest):
             beads={"_B": "c1ccccc1"},
             conversion_dict=amber_dict,
             aniso_beads=True,
-            mass_scale=12.011
+            mass_scale=12.011,
         )
         assert isinstance(system.mapping, dict)
         assert len(system.mapping["_B...c1ccccc1"]) == 20
@@ -233,7 +233,7 @@ class Test_CGSystem(BaseTest):
             assert len(snap.bonds.typeid) == len(snap.bonds.group) == 0
             assert len(snap.bonds.types) == 0
             assert len(snap.particles.orientation) == 20
-            assert np.allclose(sum(snap.particles.mass), 20*78.11, atol=1e-1)
+            assert np.allclose(sum(snap.particles.mass), 20 * 78.11, atol=1e-1)
 
         cg_json = tmp_path / "cg-anisobenzene.json"
         system.save_mapping(cg_json)
