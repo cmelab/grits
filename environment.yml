@@ -2,6 +2,8 @@ name: grits
 channels:
   - conda-forge
 dependencies:
+  - python=3.10
+  - numpy
   - ele
   - freud>=2.13.1
   - gsd>=3.0
