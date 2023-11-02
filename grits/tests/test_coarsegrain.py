@@ -248,8 +248,7 @@ class Test_CGSystem(BaseTest):
             mass_scale=12.011,
         )
         assert len(system.mapping["_B...c1ccc(S)cc1"]) == 4
-        #TODO: there should be more than one frame in the CG file resulting from this, but there isn't presently
-        
+        # TODO: there should be more than one frame in the CG file resulting from this, but there isn't presently
 
     def test_pps(self, tmp_path):
         gsdfile = path.join(asset_dir, "pps-aa.gsd")
