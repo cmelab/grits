@@ -238,6 +238,19 @@ class Test_CGSystem(BaseTest):
         cg_json = tmp_path / "cg-anisobenzene.json"
         system.save_mapping(cg_json)
 
+    def test_anisorotations(self, tmp_path):
+        gsdfile = path.join(asset_dir, "four-pps-rotating.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1ccc(S)cc1"},
+            add_hydrogens=True,
+            aniso_beads=True,
+            mass_scale=12.011,
+        )
+        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 4
+        #TODO: there should be more than one frame in the CG file resulting from this, but there isn't presently
+        
+
     def test_pps(self, tmp_path):
         gsdfile = path.join(asset_dir, "pps-aa.gsd")
         system = CG_System(
