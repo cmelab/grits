@@ -31,13 +31,13 @@ REQUIRED = []
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-# Load the package's __version__.py module as a dictionary.
-about = {}
-if not VERSION:
-    with open(os.path.join(here, NAME, "__version__.py")) as f:
-        exec(f.read(), about)
-else:
-    about["__version__"] = VERSION
+def myversion():
+    from setuptools_scm.version import get_local_dirty_tag
+
+    def clean_scheme(version):
+        return get_local_dirty_tag(version) if version.dirty else "+clean"
+    
+    return {"local_scheme": clean_scheme}
 
 
 class UploadCommand(Command):
@@ -82,7 +82,7 @@ class UploadCommand(Command):
 # Where the magic happens:
 setup(
     name=NAME,
-    version=about["__version__"],
+    use_scm_version=myversion,
     description=DESCRIPTION,
     author=AUTHOR,
     author_email=EMAIL,
