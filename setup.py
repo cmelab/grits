@@ -38,7 +38,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url=URL,
-    license="GPLv3",
+    license="MIT",
     project_urls={
         "Bug Tracker": f"{URL}/issues",
     },
