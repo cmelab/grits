@@ -12,8 +12,7 @@ AUTHOR = "Jenny Fothergill"
 REQUIRES_PYTHON = ">=3.8"
 
 # What packages are required for this module to be executed?
-REQUIRED = ["mbuild", "numpy"]
-
+REQUIRED = []
 
 here = path.abspath(path.dirname(__file__))
 
