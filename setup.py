@@ -31,12 +31,13 @@ REQUIRED = []
 
 here = os.path.abspath(os.path.dirname(__file__))
 
+
 def myversion():
     from setuptools_scm.version import get_local_dirty_tag
 
     def clean_scheme(version):
         return get_local_dirty_tag(version) if version.dirty else "+clean"
-    
+
     return {"local_scheme": clean_scheme}
 
 
