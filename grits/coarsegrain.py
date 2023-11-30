@@ -118,9 +118,9 @@ class CG_Compound(Compound):
                     mol.write(format="mol2", filename=f.name, overwrite=True)
                     mol = list(pybel.readfile("mol2", f.name))[0]
 
-                mol.addh()
+                mol.OBMol.AddHydrogens()#mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
-                print(f"Added {n_atoms2-n_atoms} hydrogens.")
+                warn(f"Added {n_atoms2-n_atoms} hydrogens.")
 
             self._set_mapping(beads, mol, allow_overlap)
         elif mapping is not None:
@@ -149,6 +149,7 @@ class CG_Compound(Compound):
             if not smarts.findall(mol):
                 warn(f"{smart_str} not found in compound!")
             for group in smarts.findall(mol):
+                # correct for SMARTS one-based indexing
                 group = tuple(i - 1 for i in group)
                 _group = list(group)
                 for p_idx in group:
@@ -184,9 +185,13 @@ class CG_Compound(Compound):
                     seen.update(group)
                     mapping[f"{name}...{smarts}"].append(group)
 
-        n_atoms = mol.OBMol.NumHvyAtoms()
+        n_atoms = mol.OBMol.NumAtoms()
         if n_atoms != len(seen):
-            warn("Some atoms have been left out of coarse-graining!")
+            # TODO this warning sometimes triggers even when seen == mol.OBMol.NumAtoms()
+            warn(f"Some atoms have been left out of coarse-graining!\n\
+                Atoms seen: {seen}\n\
+                ({len(seen)} out of {mol.OBMol.NumAtoms()})")
+                # All atoms: {[mol.OBMol.GetAtom(i+1) for i in range(mol.OBMol.NumAtoms())]}")
             # TODO make this more informative
         self.mapping = mapping
 
@@ -739,7 +744,7 @@ class CG_System:
                             hmass = element_from_symbol("H").mass
                             positions = s.particles.position[x]
                             heavy_positions = positions[
-                                np.where(masses > hmass / self.mass_scale)
+                                np.where(masses > hmass)
                             ]
                             major_axis, ab_idxs = get_major_axis(
                                 heavy_positions

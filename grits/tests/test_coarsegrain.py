@@ -246,9 +246,15 @@ class Test_CGSystem(BaseTest):
             add_hydrogens=True,
             aniso_beads=True,
             mass_scale=12.011,
+            allow_overlap=True,
         )
         assert len(system.mapping["_B...c1ccc(S)cc1"]) == 4
-        # TODO: there should be more than one frame in the CG file resulting from this, but there isn't presently
+        with gsd.hoomd.open(gsdfile) as f:
+            frame0 = f[0]
+            frame1 = f[1]
+        print(f'\n\nORIENTATIONS FRAME 0: {frame0.particles.orientation}\nORIENTATIONS FRAME 1: {frame1.particles.orientation}\n\n')
+        assert not np.allclose(frame0.particles.orientation, frame1.particles.orientation)
+        # TODO: why are these coming back as the default?
 
     def test_pps(self, tmp_path):
         gsdfile = path.join(asset_dir, "pps-aa.gsd")
@@ -280,6 +286,7 @@ class Test_CGSystem(BaseTest):
             beads={"_B": "c1ccc(S)cc1"},
             conversion_dict=amber_dict,
             add_hydrogens=True,
+            allow_overlap=True,
         )
 
         assert isinstance(system.mapping, dict)
