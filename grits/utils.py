@@ -6,6 +6,7 @@ import ele
 import freud
 import numpy as np
 import rowan
+import warnings
 from ele import element_from_symbol
 from mbuild.box import Box
 from mbuild.compound import Compound, Particle
@@ -324,6 +325,8 @@ def get_quaternion(n1, n0=np.array([0, 0, 1])):
             of a quaternion.
     """
     if n1 is None:  # one atom in this bead -> default quaternion
+        warnings.warn('get_quaternion was called with None as input!\n\
+                      Returning default orientation.')
         return np.array([0, 0, 0, 1])
     V_axis = np.cross(n0, n1)
     theta_numerator = np.dot(n0, n1)
