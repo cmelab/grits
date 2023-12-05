@@ -283,14 +283,15 @@ class Test_CGSystem(BaseTest):
         gsdfile = path.join(asset_dir, "pps-ua.gsd")
         system = CG_System(
             gsdfile,
-            beads={"_B": "c1ccc(S)cc1"},
+            beads={"_B": "c1ccc([S,s])cc1"},
             conversion_dict=amber_dict,
+            allow_overlap=False,
             add_hydrogens=True,
-            allow_overlap=True,
         )
 
         assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1ccc(S)cc1"]) == 225
+        # this gsd has 15 15-mers of PPS -> expect 225 beads
+        assert len(system.mapping["_B...c1ccc([S,s])cc1"]) == 225
 
         cg_gsd = tmp_path / "cg-pps.gsd"
         system.save(cg_gsd)
