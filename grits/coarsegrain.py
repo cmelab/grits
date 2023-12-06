@@ -118,7 +118,7 @@ class CG_Compound(Compound):
                     mol.write(format="mol2", filename=f.name, overwrite=True)
                     mol = list(pybel.readfile("mol2", f.name))[0]
 
-                mol.OBMol.AddHydrogens()#mol.addh()
+                mol.OBMol.AddHydrogens()  # mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
                 print(f"Added {n_atoms2-n_atoms} hydrogens.")
 

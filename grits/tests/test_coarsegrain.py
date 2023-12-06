@@ -254,7 +254,9 @@ class Test_CGSystem(BaseTest):
         with gsd.hoomd.open(cg_gsd) as f:
             frame0 = f[0]
             frame1 = f[1]
-        assert not np.allclose(frame0.particles.orientation, frame1.particles.orientation)
+        assert not np.allclose(
+            frame0.particles.orientation, frame1.particles.orientation
+        )
 
     def test_pps(self, tmp_path):
         gsdfile = path.join(asset_dir, "pps-aa.gsd")
