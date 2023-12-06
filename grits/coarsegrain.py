@@ -9,6 +9,7 @@ import ele
 import freud
 import gsd.hoomd
 import numpy as np
+from ele import element_from_symbol
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
 from openbabel import pybel
@@ -17,6 +18,8 @@ from grits.utils import (
     NumpyEncoder,
     comp_from_snapshot,
     get_bonds,
+    get_major_axis,
+    get_quaternion,
     has_common_member,
     has_number,
     snap_molecules,
@@ -56,6 +59,10 @@ class CG_Compound(Compound):
         Whether to allow beads representing ring structures to share atoms.
     add_hydrogens : bool, default False
         Whether to add hydrogens. Useful for united-atom models.
+    aniso_beads : bool, default False
+        Whether to calculate orientations for anisotropic beads.
+        Note: Bead sizes should be fitted during paramaterization.
+        Only Gay-Berne major axis orientations are calculated here.
 
     Attributes
     ----------
@@ -87,6 +94,7 @@ class CG_Compound(Compound):
         mapping=None,
         allow_overlap=False,
         add_hydrogens=False,
+        aniso_beads=False,
         **kwargs,
     ):
         super(CG_Compound, self).__init__(**kwargs)
@@ -97,6 +105,7 @@ class CG_Compound(Compound):
         self.atomistic = compound
         self.anchors = None
         self.bond_map = None
+        self.aniso_beads = aniso_beads
 
         if beads is not None:
             mol = compound.to_pybel()
@@ -109,7 +118,7 @@ class CG_Compound(Compound):
                     mol.write(format="mol2", filename=f.name, overwrite=True)
                     mol = list(pybel.readfile("mol2", f.name))[0]
 
-                mol.addh()
+                mol.OBMol.AddHydrogens()  # mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
                 print(f"Added {n_atoms2-n_atoms} hydrogens.")
 
@@ -140,6 +149,7 @@ class CG_Compound(Compound):
             if not smarts.findall(mol):
                 warn(f"{smart_str} not found in compound!")
             for group in smarts.findall(mol):
+                # correct for SMARTS one-based indexing
                 group = tuple(i - 1 for i in group)
                 _group = list(group)
                 for p_idx in group:
@@ -175,21 +185,43 @@ class CG_Compound(Compound):
                     seen.update(group)
                     mapping[f"{name}...{smarts}"].append(group)
 
-        n_atoms = mol.OBMol.NumHvyAtoms()
+        n_atoms = mol.OBMol.NumAtoms()
         if n_atoms != len(seen):
-            warn("Some atoms have been left out of coarse-graining!")
+            # TODO this warning seems to trigger on re-adding H into ring-containing UA systems
+            warn(f"Some atoms have been left out of coarse-graining!")
             # TODO make this more informative
         self.mapping = mapping
 
     def _cg_particles(self):
         """Set the beads in the coarse-structure."""
+        orientations = []
         for key, inds in self.mapping.items():
             name, smarts = key.split("...")
             for group in inds:
-                mass = sum([self.atomistic[i].mass for i in group])
+                masses = np.array([self.atomistic[i].mass for i in group])
+                tot_mass = sum(masses)
                 bead_xyz = self.atomistic.xyz[group, :]
                 avg_xyz = np.mean(bead_xyz, axis=0)
-                bead = Bead(name=name, pos=avg_xyz, smarts=smarts, mass=mass)
+                orientation = None
+                if self.aniso_beads:
+                    # filter out hydrogens
+                    hmass = element_from_symbol("H").mass
+                    heavy_positions = bead_xyz[np.where(masses > hmass)]
+                    if len(heavy_positions) > 2:
+                        major_axis, _ = get_major_axis(heavy_positions)
+                    elif len(heavy_positions) == 2:
+                        major_axis = heavy_positions[1] - heavy_positions[0]
+                    else:
+                        major_axis = None
+                    orientation = get_quaternion(major_axis)
+                    orientations.append(orientation)
+                bead = Bead(
+                    name=name,
+                    pos=avg_xyz,
+                    smarts=smarts,
+                    mass=tot_mass,
+                    orientation=orientation,
+                )
                 self.add(bead)
 
     def _cg_bonds(self):
@@ -404,15 +436,22 @@ class Bead(Compound):
     ----------
     smarts : str, default None
         SMARTS string used to specify this Bead.
+    orientation : numpy array, default None
+        Quaternion describing an anisotropic Gay-Berne
+        bead's orientation.
 
     Attributes
     ----------
     smarts : str
         SMARTS string used to specify this Bead.
+    orientation : numpy array
+        Quaternion describing an anisotropic Gay-Berne
+        bead's orientation.
     """
 
-    def __init__(self, smarts=None, **kwargs):
+    def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
+        self.orientation = orientation
         super(Bead, self).__init__(element=None, **kwargs)
 
 
@@ -454,6 +493,10 @@ class CG_System:
         Factor by which to scale mass values.
     add_hydrogens : bool, default False
         Whether to add hydrogens. Useful for united-atom models.
+    aniso_beads : bool, default False
+        Whether to calculate orientations for anisotropic beads.
+        Note: Bead sizes should be fitted during paramaterization.
+        These are not calculated here.
 
     Attributes
     ----------
@@ -476,6 +519,7 @@ class CG_System:
         length_scale=1.0,
         mass_scale=1.0,
         add_hydrogens=False,
+        aniso_beads=False,
     ):
         if (beads is None) == (mapping is None):
             raise ValueError(
@@ -486,6 +530,8 @@ class CG_System:
         self._inds = []
         self._bond_array = None
         self.mass_scale = mass_scale
+        self.aniso_beads = aniso_beads
+        self.mass_scale = mass_scale
 
         if beads is not None:
             # get compounds
@@ -495,6 +541,7 @@ class CG_System:
                 length_scale=length_scale,
                 conversion_dict=conversion_dict,
                 add_hydrogens=add_hydrogens,
+                aniso_beads=aniso_beads,
             )
 
             # calculate the bead mappings for the entire trajectory
@@ -512,6 +559,7 @@ class CG_System:
         length_scale,
         conversion_dict,
         add_hydrogens,
+        aniso_beads,
     ):
         """Get compounds for each molecule type in the gsd trajectory."""
         # Use the first frame to find the coarse-grain mapping
@@ -547,8 +595,10 @@ class CG_System:
             self._compounds.append(
                 CG_Compound(
                     compound=mb_comp,
+                    allow_overlap=allow_overlap,
                     beads=beads,
                     add_hydrogens=add_hydrogens,
+                    aniso_beads=aniso_beads,
                 )
             )
             self._inds.append(
@@ -646,6 +696,8 @@ class CG_System:
         # Set up bond information if it exists
         bond_types = []
         bond_ids = []
+        # Todo: Fill this if we need to
+        bond_type_shapes = None
         N_bonds = 0
         if self._bond_array is not None:
             N_bonds = self._bond_array.shape[0]
@@ -660,26 +712,45 @@ class CG_System:
                     bond_types.append(bond_pair)
                 _id = np.where(np.array(bond_types) == bond_pair)[0]
                 bond_ids.append(_id)
+        else:
+            bond_types = None
 
         with gsd.hoomd.open(cg_gsdfile, "w") as new, gsd.hoomd.open(
             self.gsdfile, "r"
         ) as old:
-            if stop is None:
-                stop = len(old)
+            # stop being None is fine; slicing [0:None] gives whole array,
+            # even in edge case where there's only one or two frames
             for s in old[start:stop]:
                 new_snap = gsd.hoomd.Frame()
                 position = []
                 mass = []
+                orientation = [] if self.aniso_beads else None
                 f_box = freud.Box.from_box(s.configuration.box)
                 unwrap_pos = f_box.unwrap(
                     s.particles.position, s.particles.image
                 )
                 for i, inds in enumerate(self.mapping.values()):
                     position += [np.mean(unwrap_pos[x], axis=0) for x in inds]
+
                     mass += [
                         sum(s.particles.mass[x]) * self.mass_scale for x in inds
                     ]
+                    if self.aniso_beads:
+                        for x in inds:
+                            masses = s.particles.mass[x]
+                            hmass = element_from_symbol("H").mass
+                            positions = s.particles.position[x]
+                            heavy_positions = positions[
+                                np.where(masses > hmass)
+                            ]
+                            major_axis, ab_idxs = get_major_axis(
+                                heavy_positions
+                            )
+                            orientation.append(get_quaternion(major_axis))
 
+                if self.aniso_beads:
+                    orientation = np.vstack(orientation)
+                    new_snap.particles.orientation = orientation
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
@@ -692,9 +763,16 @@ class CG_System:
                 new_snap.particles.typeid = typeid
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
+
                 if N_bonds > 0:
                     new_snap.bonds.N = N_bonds
                     new_snap.bonds.group = self._bond_array
-                    new_snap.bonds.types = np.array(bond_types)
                     new_snap.bonds.typeid = np.array(bond_ids)
+                    if bond_types is not None:
+                        new_snap.bonds.types = np.array(bond_types)
+                    else:
+                        new_snap.bonds.types = None
+                    new_snap.bonds.type_shapes = bond_type_shapes
+                    if self.aniso_beads:
+                        new_snap.particles.orientation = orientation
                 new.append(new_snap)
