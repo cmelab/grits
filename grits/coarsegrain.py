@@ -120,7 +120,7 @@ class CG_Compound(Compound):
 
                 mol.OBMol.AddHydrogens()#mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
-                warn(f"Added {n_atoms2-n_atoms} hydrogens.")
+                print(f"Added {n_atoms2-n_atoms} hydrogens.")
 
             self._set_mapping(beads, mol, allow_overlap)
         elif mapping is not None:
@@ -187,11 +187,8 @@ class CG_Compound(Compound):
 
         n_atoms = mol.OBMol.NumAtoms()
         if n_atoms != len(seen):
-            # TODO this warning sometimes triggers even when seen == mol.OBMol.NumAtoms()
-            warn(f"Some atoms have been left out of coarse-graining!\n\
-                Atoms seen: {seen}\n\
-                ({len(seen)} out of {mol.OBMol.NumAtoms()})")
-                # All atoms: {[mol.OBMol.GetAtom(i+1) for i in range(mol.OBMol.NumAtoms())]}")
+            # TODO this warning seems to trigger on re-adding H into ring-containing UA systems
+            warn(f"Some atoms have been left out of coarse-graining!")
             # TODO make this more informative
         self.mapping = mapping
 
@@ -721,8 +718,8 @@ class CG_System:
         with gsd.hoomd.open(cg_gsdfile, "w") as new, gsd.hoomd.open(
             self.gsdfile, "r"
         ) as old:
-            if stop is None:
-                stop = len(old)
+            # stop being None is fine; slicing [0:None] gives whole array,
+            # even in edge case where there's only one or two frames
             for s in old[start:stop]:
                 new_snap = gsd.hoomd.Frame()
                 position = []
@@ -740,7 +737,7 @@ class CG_System:
                     ]
                     if self.aniso_beads:
                         for x in inds:
-                            masses = s.particles.mass[x] * self.mass_scale
+                            masses = s.particles.mass[x]
                             hmass = element_from_symbol("H").mass
                             positions = s.particles.position[x]
                             heavy_positions = positions[
@@ -753,6 +750,7 @@ class CG_System:
 
                 if self.aniso_beads:
                     orientation = np.vstack(orientation)
+                    new_snap.particles.orientation = orientation
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
