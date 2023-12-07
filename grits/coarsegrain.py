@@ -737,7 +737,7 @@ class CG_System:
                     ]
                     if self.aniso_beads:
                         for x in inds:
-                            masses = s.particles.mass[x]
+                            masses = s.particles.mass[x] * self.mass_scale
                             hmass = element_from_symbol("H").mass
                             positions = s.particles.position[x]
                             heavy_positions = positions[
