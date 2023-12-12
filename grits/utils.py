@@ -1,10 +1,12 @@
 """Utility functions for GRiTS."""
 import json
 import re
+import warnings
 
 import ele
 import freud
 import numpy as np
+import rowan
 from ele import element_from_symbol
 from mbuild.box import Box
 from mbuild.compound import Compound, Particle
@@ -38,6 +40,7 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
         Value by which to scale the length values
     mass_scale : float, default 1.0
         Value by which to scale the mass values
+
     Returns
     -------
     comp : mbuild.Compound
@@ -211,6 +214,128 @@ def get_index(compound, particle):
         The particle index
     """
     return [p for p in compound].index(particle)
+
+
+def get_heavy_atoms(particles):
+    """Filter out hydrogens for axis-angle calculation.
+
+    Returns arrays of only heavy atoms' positions and masses,
+    given a gsd.frame.particles object. Used in Aniso mapping.
+
+    Parameters
+    ----------
+    particles : gsd.frame.particles
+        Particles from all atom gsd frame.
+
+    Returns
+    -------
+    heavy_partpos : numpy array
+        Array of all positions of heavy atoms
+    heavy_partmass : numpy array
+        Array of all masses of heavy atoms
+    """
+    partpos = particles.position
+    partmass = particles.mass
+    partelem = particles.typeid
+    heavy_atom_indicies = np.where(partelem != 1)[0]
+    heavy_partpos = partpos[heavy_atom_indicies]
+    heavy_partmass = partmass[heavy_atom_indicies]
+    return heavy_partpos, heavy_partmass
+
+
+def get_major_axis(positions_arr):
+    """Find the major axis for GB CG representation.
+
+    Used in axis-angle orientation representation.
+
+    Parameters
+    ----------
+        positions_arr : numpy array
+            N_particlesx3 numpy array of particle positions
+            to map to one aniso bead.
+        elements_arr : list
+            List of length N_particles containing particle elements
+
+    Returns
+    -------
+        major_axis : numpy array
+            array designating vector of major axis of Gay-Berne particle
+        particle_indicies : tuple of ints
+            tuple of two particle indices used to calculate major axis vector
+    """
+    major_axis = None
+    max_dist = 0
+    AB_indicies = (None, None)
+    for i, x0 in enumerate(positions_arr):
+        for j, x1 in enumerate(positions_arr[i + 1 :]):
+            vect = x1 - x0
+            dist = np.linalg.norm(vect)
+            if dist > max_dist:
+                max_dist = dist
+                major_axis = vect
+                # adjust j for loop stride
+                AB_indicies = (i, j + i + 1)
+    return major_axis, AB_indicies
+
+
+def get_com(particle_positions, particle_masses):
+    """Calculate center of mass coordinates.
+
+       Given a set of particle positions and masses, find
+       their center of mass.
+       Arrays must be of same dimension.
+
+    Parameters
+    ----------
+        particle_positions : numpy array
+            N_particlesx3 numpy array of particle positions (x,y,z)
+        particle_masses : numpy array
+            N_particlesx0 numpy array of particle masses
+
+    Returns
+    -------
+        center_of_mass : numpy array
+            3x0 numpy array of center of mass coordinates
+    """
+    M = np.sum(particle_masses)
+    weighted_positions = particle_positions * particle_masses[:, np.newaxis]
+    center_of_mass = np.sum(weighted_positions / M, axis=0)
+    return center_of_mass
+
+
+def get_quaternion(n1, n0=np.array([0, 0, 1])):
+    """Calculate rotation quaternion from axis vectors.
+
+    Calculate axis and angle of rotation given
+    two planes' normal vectors, which is then used
+    to calculate the quaternions for HOOMD.
+
+    Parameters
+    ----------
+        n1 : numpy array
+            numpy array that is the major axis vector.
+        n0 : numpy array
+            numpy array that is used to define the default quaternion.
+            Defaults to the Z-axis.
+
+    Returns
+    -------
+        quaternion : numpy array
+            numpy array that tells the position of the monomer in units
+            of a quaternion.
+    """
+    if n1 is None:  # one atom in this bead -> default quaternion
+        warnings.warn(
+            "get_quaternion was called with None as input!\n\
+                      Returning default orientation."
+        )
+        return np.array([0, 0, 0, 1])
+    V_axis = np.cross(n0, n1)
+    theta_numerator = np.dot(n0, n1)
+    theta_denominator = np.linalg.norm(n0) * np.linalg.norm(n1)
+    theta_rotation = np.arccos(theta_numerator / theta_denominator)
+    quaternion = rowan.from_axis_angle(V_axis, theta_rotation)
+    return quaternion
 
 
 def get_hydrogen(compound, particle):
