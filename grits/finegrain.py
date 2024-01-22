@@ -20,7 +20,6 @@ def backmap_snapshot_to_compound(
     #TODO
     # assert all 3 dicts have the same keys
     cg_snap = snapshot
-    fg_snap = gsd.hoomd.Frame()
     fg_compound = mb.Compound()
     box = cg_snap.configuration.box
     mb_box = mb.box.Box.from_lengths_angles(
