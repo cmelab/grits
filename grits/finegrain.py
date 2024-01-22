@@ -22,12 +22,13 @@ def backmap_snapshot_to_compound(
     cg_snap = snapshot
     fg_compound = mb.Compound()
     box = cg_snap.configuration.box
+    pos_adjust = np.array([box[0] / 2, box[1] / 2, box[2] / 2])
     mb_box = mb.box.Box.from_lengths_angles(
             lengths=[box[0], box[1], box[2]],
             angles=[np.pi, np.pi, np.pi]
     )
     fg_compound.box = mb_box
-    # Create atomistic compounds, remove hydrogens in the way
+    # Create atomistic compounds, remove hydrogens in the way of bonds
     compounds = dict() 
     anchor_dict = dict()
     for mapping in bead_mapping:
@@ -65,7 +66,7 @@ def backmap_snapshot_to_compound(
                 ]
                 bead_pos = cg_snap.particles.position[bead_index]
                 comp = mb.clone(compounds[bead_type])
-                comp.translate_to(bead_pos)
+                comp.translate_to(bead_pos + pos_adjust)
                 mb_compounds.append(comp)
                 bead_to_comp_dict[bead_index] = comp
                 finished_beads.add(bead_index)
