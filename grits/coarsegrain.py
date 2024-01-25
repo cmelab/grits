@@ -9,11 +9,11 @@ import ele
 import freud
 import gsd.hoomd
 import numpy as np
+from cmeutils.gsd_utils import identify_snapshot_connections
 from ele import element_from_symbol
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
 from openbabel import pybel
-from cmeutils.gsd_utils import identify_snapshot_connections
 
 from grits.utils import (
     NumpyEncoder,
