@@ -18,3 +18,4 @@ dependencies:
   - pytest
   - pytest-cov
   - rdkit
+  - cmeutils >= 1.2.0

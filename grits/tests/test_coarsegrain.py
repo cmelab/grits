@@ -278,6 +278,22 @@ class Test_CGSystem(BaseTest):
             )
             assert len(snap.bonds.types) == 1
 
+            assert (
+                len(snap.angles.typeid)
+                == len(snap.angles.group)
+                == snap.angles.N
+            )
+            assert snap.angles.N == 15 * 13
+            assert snap.angles.types == ["_B-_B-_B"]
+
+            assert (
+                len(snap.dihedrals.typeid)
+                == len(snap.dihedrals.group)
+                == snap.dihedrals.N
+            )
+            assert snap.dihedrals.N == 15 * 12
+            assert snap.dihedrals.types == ["_B-_B-_B-_B"]
+
         cg_json = tmp_path / "cg-pps.json"
         system.save_mapping(cg_json)
 
@@ -303,6 +319,21 @@ class Test_CGSystem(BaseTest):
                 len(snap.bonds.typeid) == len(snap.bonds.group) == snap.bonds.N
             )
             assert len(snap.bonds.types) == 1
+            assert (
+                len(snap.angles.typeid)
+                == len(snap.angles.group)
+                == snap.angles.N
+            )
+            assert snap.angles.N == 15 * 13
+            assert snap.angles.types == ["_B-_B-_B"]
+
+            assert (
+                len(snap.dihedrals.typeid)
+                == len(snap.dihedrals.group)
+                == snap.dihedrals.N
+            )
+            assert snap.dihedrals.N == 15 * 12
+            assert snap.dihedrals.types == ["_B-_B-_B-_B"]
 
         cg_json = tmp_path / "cg-pps.json"
         system.save_mapping(cg_json)

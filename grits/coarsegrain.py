@@ -9,6 +9,7 @@ import ele
 import freud
 import gsd.hoomd
 import numpy as np
+from cmeutils.gsd_utils import identify_snapshot_connections
 from ele import element_from_symbol
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
@@ -760,7 +761,7 @@ class CG_System:
                 new_snap.particles.N = len(typeid)
                 new_snap.particles.position = position
                 new_snap.particles.image = images
-                new_snap.particles.typeid = typeid
+                new_snap.particles.typeid = typeid.astype(int)
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
 
@@ -775,4 +776,5 @@ class CG_System:
                     new_snap.bonds.type_shapes = bond_type_shapes
                     if self.aniso_beads:
                         new_snap.particles.orientation = orientation
+                    new_snap = identify_snapshot_connections(new_snap)
                 new.append(new_snap)
