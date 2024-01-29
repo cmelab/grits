@@ -1,5 +1,4 @@
 """GRiTS: Fine-graining tools."""
-__all__ = ["backmap_compound", "backmap_gsd"]
 
 import itertools as it
 from collections import defaultdict

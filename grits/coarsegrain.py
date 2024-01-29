@@ -1,4 +1,5 @@
 """GRiTS: Coarse-graining tools."""
+
 import json
 import os
 import tempfile
