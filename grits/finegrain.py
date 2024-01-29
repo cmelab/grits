@@ -1,4 +1,5 @@
 """GRiTS: Fine-graining tools."""
+
 __all__ = ["backmap"]
 
 import itertools as it
