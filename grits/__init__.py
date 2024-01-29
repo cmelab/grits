@@ -1,4 +1,5 @@
 """GRiTS: A coarse-grain toolkit using chemical grammars."""
+
 from importlib.metadata import PackageNotFoundError, version
 
 from . import utils
