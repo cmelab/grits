@@ -362,7 +362,7 @@ class CG_Compound(Compound):
         if atom_names:
             atomistic.save(
                 os.path.join(tmp_dir, "atomistic_tmp.mol2"),
-                show_ports=show_ports,
+                include_ports=show_ports,
                 overwrite=True,
             )
 
@@ -397,7 +397,7 @@ class CG_Compound(Compound):
                 simplefilter("ignore")
                 coarse.save(
                     os.path.join(tmp_dir, "coarse_tmp.mol2"),
-                    show_ports=show_ports,
+                    include_ports=show_ports,
                     overwrite=True,
                 )
             with open(os.path.join(tmp_dir, "coarse_tmp.mol2"), "r") as f:
