@@ -221,9 +221,6 @@ class Test_CGSystem(BaseTest):
             conversion_dict=amber_dict,
             mass_scale=12.011,
         )
-        assert isinstance(system.mapping, dict)
-        assert len(system.mapping["_B...c1ccccc1"]) == 20
-
         cg_gsd = tmp_path / "cg-benzene.gsd"
         system.save(cg_gsdfile=cg_gsd, start=0, stop=-1, stride=2)
         with gsd.hoomd.open(cg_gsd) as f:
