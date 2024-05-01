@@ -3,6 +3,7 @@
 [![Docker Repository on Quay](https://quay.io/repository/cmelab/grits/status "Docker Repository on Quay")](https://quay.io/repository/cmelab/grits)
 [![pytest](https://github.com/cmelab/grits/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/grits/actions/workflows/pytest.yml)
 [![codecov](https://codecov.io/gh/cmelab/grits/branch/main/graph/badge.svg?token=lGG8Zf65HP)](https://codecov.io/gh/cmelab/grits)
+[![Documentation Status](https://readthedocs.org/projects/grits/badge/?version=latest)](https://grits.readthedocs.io/en/latest/?badge=latest)
 
 ![GRiTS workflow](/.github/grits.png)
 
