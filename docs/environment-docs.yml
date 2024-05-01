@@ -11,6 +11,6 @@ dependencies:
   - ele
   - freud
   - gsd
-  - mbuild
+  - mbuild>=0.17
   - numpy
   - openbabel
