@@ -213,6 +213,19 @@ class Test_CGSystem(BaseTest):
         cg_json = tmp_path / "cg-benzene.json"
         system.save_mapping(cg_json)
 
+    def test_stride(self, tmp_path):
+        gsdfile = path.join(asset_dir, "benzene-aa.gsd")
+        system = CG_System(
+            gsdfile,
+            beads={"_B": "c1ccccc1"},
+            conversion_dict=amber_dict,
+            mass_scale=12.011,
+        )
+        cg_gsd = tmp_path / "cg-benzene.gsd"
+        system.save(cg_gsdfile=cg_gsd, start=0, stop=-1, stride=2)
+        with gsd.hoomd.open(cg_gsd) as f:
+            assert len(f) == 3
+
     def test_anisobenzene(self, tmp_path):
         gsdfile = path.join(asset_dir, "benzene-aa.gsd")
         system = CG_System(

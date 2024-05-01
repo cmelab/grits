@@ -667,7 +667,7 @@ class CG_System:
             json.dump(self.mapping, f, cls=NumpyEncoder)
         print(f"Mapping saved to {filename}")
 
-    def save(self, cg_gsdfile, start=0, stop=None):
+    def save(self, cg_gsdfile, start=0, stop=None, stride=1):
         """Save the coarse-grain system to a gsd file.
 
         Does not calculate the image of the coarse-grain bead.
@@ -688,6 +688,8 @@ class CG_System:
         stop : int, default None
             Where to stop reading the gsd trajectory the system was created
             with. If None, will stop at the last frame.
+        stride : int, default 1
+            The step size to use when iterating through start:stop
         """
         typeid = []
         types = [i.split("...")[0] for i in self.mapping]
@@ -722,7 +724,7 @@ class CG_System:
         ) as old:
             # stop being None is fine; slicing [0:None] gives whole array,
             # even in edge case where there's only one or two frames
-            for s in old[start:stop]:
+            for s in old[start:stop:stride]:
                 new_snap = gsd.hoomd.Frame()
                 position = []
                 mass = []
