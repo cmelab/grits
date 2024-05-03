@@ -1,6 +1,5 @@
 # GRiTS : Grits Reduces/Restores Topology with SMILES
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/grits/badges/version.svg)](https://anaconda.org/conda-forge/grits)
-[![Docker Repository on Quay](https://quay.io/repository/cmelab/grits/status "Docker Repository on Quay")](https://quay.io/repository/cmelab/grits)
 [![pytest](https://github.com/cmelab/grits/actions/workflows/pytest.yml/badge.svg)](https://github.com/cmelab/grits/actions/workflows/pytest.yml)
 [![codecov](https://codecov.io/gh/cmelab/grits/branch/main/graph/badge.svg?token=lGG8Zf65HP)](https://codecov.io/gh/cmelab/grits)
 
