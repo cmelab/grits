@@ -77,8 +77,8 @@ jobs:
           file: ${{ env.DOCKERFILE }}
           load: true
           push: false
-          tags: ${{ steps.latest-version.outputs.VERSION }}
-          labels: ${{ steps.latest-version.outputs.VERSION }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ steps.latest-version.outputs.VERSION }}
             
@@ -93,7 +93,7 @@ jobs:
           context: .
           file: ${{ env.DOCKERFILE }}
           push: true
-          tags: ${{ steps.latest-version.outputs.VERSION }}
-          labels: ${{ steps.latest-version.outputs.VERSION }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ steps.latest-version.outputs.VERSION }}
