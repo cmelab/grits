@@ -10,6 +10,10 @@ on:
   # Allows workflow to be manually triggered
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash -l {0}
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: cmelab/grits
@@ -18,6 +22,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
@@ -69,6 +76,7 @@ jobs:
             
       - name: Test image
         run: |
+          docker ls
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import grits; print(grits.__version__)"
       
       - name: Push Docker image
