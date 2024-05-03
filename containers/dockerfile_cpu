@@ -5,11 +5,11 @@ COPY --chown=micromamba:micromamba environment.yml /tmp/env.yml
 RUN micromamba install -y -n base -f /tmp/env.yml && \
     micromamba clean --all --yes
 
-COPY grits/ /tmp/grits/
+COPY grits setup.py README /tmp/
 
 RUN ls -la /tmp
 
-RUN python -m pip install /tmp/grits
+RUN python -m pip install /tmp/
 
 RUN pytest -vx
 
