@@ -25,7 +25,7 @@ docker run -it cmelab/grits:latest
 ```
 
 #### Micromamba install
-To create a local environment with [micromamba](https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html)), run:
+To create a local environment with [micromamba](https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html), run:
 ```bash
 micromamba create grits -f environment.yml
 micromamba activate grits
