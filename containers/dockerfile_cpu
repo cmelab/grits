@@ -1,7 +1,12 @@
-FROM mambaorg/micromamba:0.15.2
+FROM mambaorg/micromamba:1.4.1
 
-COPY --chown=micromamba:micromamba environment.yml /tmp/env.yml
+ARG VERSION
 
-RUN micromamba install -y -n base -f /tmp/env.yml && \
-    micromamba install -y -n base -c conda-forge grits && \
+ENV PYTHONUNBUFFERED=1
+
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/env.yml
+
+RUN micromamba install -y -n base "grits==$VERSION" -f /tmp/env.yml && \
     micromamba clean --all --yes
+
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
