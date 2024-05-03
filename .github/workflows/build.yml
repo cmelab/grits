@@ -60,5 +60,6 @@ jobs:
           context: .
           file: ${{ env.DOCKERFILE }}
           push: true
+          tags: ${{ steps.latest-version.outputs.VERSION }}
           build-args: |
             VERSION=${{ steps.latest-version.outputs.VERSION }}
