@@ -1,18 +1,18 @@
 name: build
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: cmelab/grits
-  DOCKERFILE: containers/dockerfile_cpu
-
 on:
   push:
     branches: [ main ]
     # Run when container or environment is changed
     paths:
-        - ${{ env.DOCKERFILE }}
+        - containers/dockerfile_cpu
   # Allows workflow to be manually triggered
   workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: cmelab/grits
+  DOCKERFILE: containers/dockerfile_cpu
 
 jobs:
   build:
