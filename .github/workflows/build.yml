@@ -81,12 +81,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ steps.latest-version.outputs.VERSION }}
-            
+
       - name: Test image
         run: |
           docker ps
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import grits; print(grits.__version__)"
-      
+
       - name: Push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
