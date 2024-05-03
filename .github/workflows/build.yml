@@ -68,7 +68,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,enable=true,priority=600,event=tag
+            type=ref,event=tag,enable=true,priority=600
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}}
+            type=sha
             ${{ steps.latest-version.outputs.VERSION }}
 
       - name: Build Docker Image
