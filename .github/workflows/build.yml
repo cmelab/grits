@@ -76,7 +76,7 @@ jobs:
             
       - name: Test image
         run: |
-          docker ls
+          docker ps
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import grits; print(grits.__version__)"
       
       - name: Push Docker image
