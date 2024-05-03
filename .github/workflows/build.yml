@@ -58,7 +58,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: production/Dockerfile
+          file: ${{ env.DOCKERFILE }}
           load: true
           push: false
           build-args: |
