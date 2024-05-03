@@ -68,7 +68,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{ is_default_branch }}
+            type=ref,enable=true,priority=600,event=tag
             ${{ steps.latest-version.outputs.VERSION }}
 
       - name: Build Docker Image
@@ -85,7 +85,6 @@ jobs:
 
       - name: Test image
         run: |
-          docker ps
           docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import grits; print(grits.__version__)"
 
       - name: Push Docker image
