@@ -12,29 +12,21 @@ GRiTS is a toolkit for working with coarse-grain systems. It uses [mBuild](https
 ### Installation
 #### Using a container
 
-To use GRiTS in a prebuilt container (using [Singularity](https://singularity.lbl.gov/)), run:
+To use GRiTS in a prebuilt container (using [Apptainer](https://apptainer.org/)), run:
 ```bash
-singularity pull docker://ghcr.io/cmelab/grits:0.4.1
-singularity exec grits_0.4.1.sif bash
+apptainer pull docker://ghcr.io/cmelab/grits:latest
+apptainer run grits_latest.sif python
 ```
 
 **Or** using [Docker](https://docs.docker.com/), run:
 ```bash
-docker pull ghcr.io/cmelab/grits:0.4.1
-docker run -it cmelab/grits:0.4.1
+docker pull ghcr.io/cmelab/grits:latest
+docker run -it cmelab/grits:latest
 ```
 
-#### Custom install
+#### Micromamba install
 To create a local environment with [micromamba](https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html)), run:
 ```bash
-micromamba create -f environment.yml
+micromamba create grits -f environment.yml
 micromamba activate grits
-```
-With the `grits` environment active, install the package with pip:
-```
-pip install .
-```
-And to test your installation, run:
-```
-pytest
 ```
