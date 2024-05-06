@@ -2,20 +2,19 @@ name: grits
 channels:
   - conda-forge
 dependencies:
-  - python=3.10
-  - numpy
+  - cmeutils >= 1.2.0
   - ele
-  - freud =2.13.2
-  - gsd>=3.0
+  - freud = 2.13.2
+  - gsd >= 3.0
   - jupyterlab
   - mbuild
   - ele
   - freud
+  - numpy
   - openbabel
   - pip
   - pre-commit
   - py3Dmol
   - pytest
   - pytest-cov
-  - rdkit
-  - cmeutils >= 1.2.0
+  - python = 3.10
