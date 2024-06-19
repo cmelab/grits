@@ -61,8 +61,11 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
         lengths=box[:3] * length_scale, tilt_factors=box[3:]
     )
 
-    # GSD and HOOMD snapshots center their boxes on the origin (0,0,0)
-    shift = np.array(comp.box.lengths) / 2
+    if shift_coords:
+        # GSD and HOOMD snapshots center their boxes on the origin (0,0,0)
+        shift = np.array(comp.box.lengths) / 2
+    else:
+        shift = np.zeros(3)
     particle_dict = {}
     # Add particles
     for i in range(n_atoms):
