@@ -82,23 +82,6 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
     return comp
 
 
-def snap_molecules(snap):
-    """Get the molecule indices based on bonding in a gsd.hoomd.Frame."""
-    system = freud.AABBQuery.from_system(snap)
-    n_query_points = n_points = snap.particles.N
-    query_point_indices = snap.bonds.group[:, 0]
-    point_indices = snap.bonds.group[:, 1]
-    distances = system.box.compute_distances(
-        system.points[query_point_indices], system.points[point_indices]
-    )
-    nlist = freud.NeighborList.from_arrays(
-        n_query_points, n_points, query_point_indices, point_indices, distances
-    )
-    cluster = freud.cluster.Cluster()
-    cluster.compute(system=system, neighbors=nlist)
-    return cluster.cluster_idx
-
-
 def align(compound, particle, towards_compound, around=None):
     """Spin a compound such that particle points at towards_compound.
 
