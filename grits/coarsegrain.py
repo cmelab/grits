@@ -10,7 +10,7 @@ import ele
 import freud
 import gsd.hoomd
 import numpy as np
-from cmeutils.gsd_utils import identify_snapshot_connections
+from cmeutils.gsd_utils import get_molecule_cluster, identify_snapshot_connections
 from ele import element_from_symbol
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
@@ -24,7 +24,6 @@ from grits.utils import (
     get_quaternion,
     has_common_member,
     has_number,
-    snap_molecules,
 )
 
 __all__ = ["CG_Compound", "CG_System", "Bead"]
@@ -574,7 +573,7 @@ class CG_System:
                 conversion_dict[i].symbol for i in snap.particles.types
             ]
         # Break apart the snapshot into separate molecules
-        molecules = snap_molecules(snap)
+        molecules = get_molecule_cluster(snap=snap)
         mol_inds = []
         for i in range(max(molecules) + 1):
             mol_inds.append(np.where(molecules == i)[0])
