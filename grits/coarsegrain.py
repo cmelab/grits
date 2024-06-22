@@ -728,7 +728,7 @@ class CG_System:
                 position = []
                 mass = []
                 #make an empty list for forces here
-
+                forces = []
                 orientation = [] if self.aniso_beads else None
                 f_box = freud.Box.from_box(s.configuration.box)
                 unwrap_pos = f_box.unwrap(
@@ -742,7 +742,7 @@ class CG_System:
                     ]
 
                     #do the force calculation here
-                    
+
                     if self.aniso_beads:
                         for x in inds:
                             masses = s.particles.mass[x] * self.mass_scale
