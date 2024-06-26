@@ -745,7 +745,9 @@ class CG_System:
 
                     # do the force calculation here
                     # do the velocity calculation here
-                    velocity += [np.mean(s.particles.velocity[x], axis=0) for x in inds]
+                    velocity += [
+                        np.mean(s.particles.velocity[x], axis=0) for x in inds
+                    ]
 
                     if self.aniso_beads:
                         for x in inds:
