@@ -727,8 +727,11 @@ class CG_System:
                 new_snap = gsd.hoomd.Frame()
                 position = []
                 mass = []
-                # make an empty list for forces here
-                net_force = []
+                # make an empty lists for forces here
+                traj_lj_forces = []
+                traj_bond_forces = []
+                traj_angle_forces = []
+                traj_dihedral_forces = []
                 # make an empty list for velocity
                 velocity = []
                 orientation = [] if self.aniso_beads else None
@@ -744,6 +747,7 @@ class CG_System:
                     ]
 
                     # do the force calculation here
+                    traj_lj_forces.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds]))   
                     # do the velocity calculation here
                     velocity += [
                         np.mean(s.particles.velocity[x], axis=0) for x in inds
@@ -768,7 +772,7 @@ class CG_System:
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
-
+                print(np.array(traj_lj_forces).shape)
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
                 new_snap.particles.N = len(typeid)
@@ -777,6 +781,8 @@ class CG_System:
                 new_snap.particles.typeid = typeid.astype(int)
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
+                new_snap.particles.velocity = velocity
+                new_snap.log["net_force"] = np.array(traj_lj_forces)
 
                 if N_bonds > 0:
                     new_snap.bonds.N = N_bonds
