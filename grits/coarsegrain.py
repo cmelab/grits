@@ -747,7 +747,11 @@ class CG_System:
                     ]
 
                     # do the force calculation here
-                    traj_lj_forces.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds]))   
+                    traj_lj_forces.append(
+                        np.add.reduce(
+                            s.log["particles/md/pair/LJ/forces"][inds]
+                        )
+                    )
                     # do the velocity calculation here
                     velocity += [
                         np.mean(s.particles.velocity[x], axis=0) for x in inds
