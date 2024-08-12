@@ -729,6 +729,7 @@ class CG_System:
                 mass = []
                 # make an empty lists for forces here
                 traj_lj_forces = []
+                traj_lj_forces_temp = []
                 traj_bond_forces = []
                 traj_angle_forces = []
                 traj_dihedral_forces = []
@@ -747,7 +748,8 @@ class CG_System:
                     ]
 
                     # do the force calculation here
-                    traj_lj_forces.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds]))   
+                    traj_lj_forces_temp.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds],1))
+                    traj_lj_forces = np.squeeze(traj_lj_forces_temp,axis=0)
                     # do the velocity calculation here
                     velocity += [
                         np.mean(s.particles.velocity[x], axis=0) for x in inds
