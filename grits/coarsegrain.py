@@ -748,8 +748,16 @@ class CG_System:
                     ]
 
                     # do the force calculation here
+<<<<<<< HEAD
                     traj_lj_forces_temp.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds],1))
                     traj_lj_forces = np.squeeze(traj_lj_forces_temp,axis=0)
+=======
+                    traj_lj_forces.append(
+                        np.add.reduce(
+                            s.log["particles/md/pair/LJ/forces"][inds]
+                        )
+                    )
+>>>>>>> 2a4194f48ca7a40adc16f567081206c633bf45f6
                     # do the velocity calculation here
                     velocity += [
                         np.mean(s.particles.velocity[x], axis=0) for x in inds
