@@ -729,10 +729,10 @@ class CG_System:
                 mass = []
                 # make an empty lists for forces here
                 traj_lj_forces = []
-                traj_lj_forces_temp = []
                 traj_bond_forces = []
                 traj_angle_forces = []
                 traj_dihedral_forces = []
+                net_force = []
                 # make an empty list for velocity
                 velocity = []
                 orientation = [] if self.aniso_beads else None
@@ -748,16 +748,15 @@ class CG_System:
                     ]
 
                     # do the force calculation here
-<<<<<<< HEAD
-                    traj_lj_forces_temp.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds],1))
-                    traj_lj_forces = np.squeeze(traj_lj_forces_temp,axis=0)
-=======
-                    traj_lj_forces.append(
-                        np.add.reduce(
-                            s.log["particles/md/pair/LJ/forces"][inds]
-                        )
-                    )
->>>>>>> 2a4194f48ca7a40adc16f567081206c633bf45f6
+                    traj_lj_forces.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds],1))
+                    traj_bond_forces.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds],1))
+                    traj_angle_forces.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds],1))
+                    traj_dihedral_forces.append(np.add.reduce(s.log['particles/md/pair/LJ/forces'][inds],1))
+                    traj_lj_forces = np.squeeze(traj_lj_forces,axis=0)
+                    traj_bond_forces = np.squeeze(traj_bond_forces,axis=0)
+                    traj_angle_forces = np.squeeze(traj_angle_forces,axis=0)
+                    traj_dihedral_forces = np.squeeze(traj_dihedral_forces,axis=0)
+
                     # do the velocity calculation here
                     velocity += [
                         np.mean(s.particles.velocity[x], axis=0) for x in inds
@@ -782,7 +781,8 @@ class CG_System:
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
-                print(np.array(traj_lj_forces).shape)
+                arr = [np.array(traj_lj_forces),np.array(traj_bond_forces),np.array(traj_angle_forces),np.array(traj_dihedral_forces)]
+                net_force = np.add.reduce(arr)
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
                 new_snap.particles.N = len(typeid)
@@ -792,7 +792,7 @@ class CG_System:
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
                 new_snap.particles.velocity = velocity
-                new_snap.log["net_force"] = np.array(traj_lj_forces)
+                new_snap.log["net_force"] = np.array(net_force)
 
                 if N_bonds > 0:
                     new_snap.bonds.N = N_bonds
