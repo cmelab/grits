@@ -1,0 +1,99 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    # Run when container or environment is changed
+    paths:
+        - containers/dockerfile_cpu
+        - environment.yml
+  # Allows workflow to be manually triggered
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: cmelab/grits
+  DOCKERFILE: containers/dockerfile_cpu
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+
+      - name: Get Latest Version
+        id: latest-version
+        run: |
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+          echo $LATEST_TAG
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+          # slice off the v, ie v0.7.2 -> 0.7.2
+          VERSION=${LATEST_TAG:1}
+          echo $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Print Latest Version
+        run: echo ${{ steps.latest-version.outputs.VERSION }}
+
+      - name: Create fully qualified image registry path
+        id: fqirp
+        run: |
+          FQIRP=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.latest-version.outputs.VERSION }}
+          echo "FQIRP=$FQIRP" >> $GITHUB_OUTPUT
+
+      - name: Print FQIRP
+        run: echo ${{ steps.fqirp.outputs.FQIRP  }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}},prefix=v
+            ${{ steps.latest-version.outputs.VERSION }}
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ${{ env.DOCKERFILE }}
+          load: true
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.latest-version.outputs.VERSION }}
+
+      - name: Test image
+        run: |
+          docker run --rm ${{ steps.fqirp.outputs.FQIRP }} python -c "import grits; print(grits.__version__)"
+
+      - name: Push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          file: ${{ env.DOCKERFILE }}
+          push: ${{ github.event_name == 'workflow_dispatch' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.latest-version.outputs.VERSION }}

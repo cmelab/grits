@@ -1,6 +1,42 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61.2", "versioningit"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
-write_to = "grits/__version__.py"
+[project]
+name = "grits"
+description = "A toolkit for working with coarse-grained systems"
+readme = "README.md"
+authors = [{name = "Jenny Fothergill", email = "jennyfothergill@boisestate.edu"}]
+license= {text = "GPLv3"}
+classifiers=[
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+urls = {Homepage = "https://github.com/cmelab/grits"}
+requires-python = ">=3.8"
+dynamic = ["version"]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages]
+find = {namespaces = false}
+
+[tool.setuptools.package-data]
+grits = ['"./compounds/*"']
+
+[tool.versioningit]
+default-version = "1+unknown"
+
+[tool.versioningit.format]
+distance = "{base_version}+{distance}.{vcs}{rev}"
+dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[tool.versioningit.vcs]
+method = "git"
+match = ["*"]
+default-tag = "0.0.0"

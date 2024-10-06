@@ -10,7 +10,7 @@ import ele
 import freud
 import gsd.hoomd
 import numpy as np
-from cmeutils.gsd_utils import identify_snapshot_connections
+from cmeutils.gsd_utils import get_molecule_cluster, identify_snapshot_connections
 from ele import element_from_symbol
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
@@ -24,7 +24,6 @@ from grits.utils import (
     get_quaternion,
     has_common_member,
     has_number,
-    snap_molecules,
 )
 
 __all__ = ["CG_Compound", "CG_System", "Bead"]
@@ -362,7 +361,7 @@ class CG_Compound(Compound):
         if atom_names:
             atomistic.save(
                 os.path.join(tmp_dir, "atomistic_tmp.mol2"),
-                show_ports=show_ports,
+                include_ports=show_ports,
                 overwrite=True,
             )
 
@@ -397,7 +396,7 @@ class CG_Compound(Compound):
                 simplefilter("ignore")
                 coarse.save(
                     os.path.join(tmp_dir, "coarse_tmp.mol2"),
-                    show_ports=show_ports,
+                    include_ports=show_ports,
                     overwrite=True,
                 )
             with open(os.path.join(tmp_dir, "coarse_tmp.mol2"), "r") as f:
@@ -574,7 +573,7 @@ class CG_System:
                 conversion_dict[i].symbol for i in snap.particles.types
             ]
         # Break apart the snapshot into separate molecules
-        molecules = snap_molecules(snap)
+        molecules = get_molecule_cluster(snap=snap)
         mol_inds = []
         for i in range(max(molecules) + 1):
             mol_inds.append(np.where(molecules == i)[0])
@@ -667,7 +666,7 @@ class CG_System:
             json.dump(self.mapping, f, cls=NumpyEncoder)
         print(f"Mapping saved to {filename}")
 
-    def save(self, cg_gsdfile, start=0, stop=None):
+    def save(self, cg_gsdfile, start=0, stop=None, stride=1):
         """Save the coarse-grain system to a gsd file.
 
         Does not calculate the image of the coarse-grain bead.
@@ -688,6 +687,8 @@ class CG_System:
         stop : int, default None
             Where to stop reading the gsd trajectory the system was created
             with. If None, will stop at the last frame.
+        stride : int, default 1
+            The step size to use when iterating through start:stop
         """
         typeid = []
         types = [i.split("...")[0] for i in self.mapping]
@@ -722,7 +723,7 @@ class CG_System:
         ) as old:
             # stop being None is fine; slicing [0:None] gives whole array,
             # even in edge case where there's only one or two frames
-            for s in old[start:stop]:
+            for s in old[start:stop:stride]:
                 new_snap = gsd.hoomd.Frame()
                 position = []
                 mass = []
