@@ -13,24 +13,26 @@ from grits.utils import align, get_hydrogen, get_index, reactant_dict
 
 
 def backmap_snapshot_to_compound(
-        snapshot,
-        bead_mapping=None,
-        bond_head_index=None,
-        bond_tail_index=None,
-        library_key=None,
-        ref_distance=None,
-        energy_minimize=False
+    snapshot,
+    bead_mapping=None,
+    bond_head_index=None,
+    bond_tail_index=None,
+    library_key=None,
+    ref_distance=None,
+    energy_minimize=False,
 ):
     # TODO
     # assert all 3 dicts have the same keys
-    if (bead_mapping is None and bond_head_index is None and bond_tail_index is None) == (library_key is None):
-            raise ValueError(
-                "Please provide dictionaries or library key."
-            )
+    if (
+        bead_mapping is None
+        and bond_head_index is None
+        and bond_tail_index is None
+    ) == (library_key is None):
+        raise ValueError("Please provide dictionaries or library key.")
     if library_key is not None:
-        bead_mapping=reactant_dict[library_key]['smiles']
-        bond_tail_index=reactant_dict[library_key]['tail_indices']
-        bond_head_index=reactant_dict[library_key]['head_indices']
+        bead_mapping = reactant_dict[library_key]["smiles"]
+        bond_tail_index = reactant_dict[library_key]["tail_indices"]
+        bond_head_index = reactant_dict[library_key]["head_indices"]
     if not ref_distance:
         ref_distance = 1
     cg_snap = snapshot
@@ -47,11 +49,11 @@ def backmap_snapshot_to_compound(
     for mapping in bead_mapping:
         comp = mb.load(bead_mapping[mapping], smiles=True)
         if bond_head_index and bond_tail_index:
-            remove_atoms = [] # These will be removed
-            anchor_particles = [] # Store this for making bonds later
-            '''adding section to remove other particles in reacting group
-            assuming input for head/tail indices is a list, with the anchor particle listed first'''
-            if len(bond_tail_index[mapping]) > 1: 
+            remove_atoms = []  # These will be removed
+            anchor_particles = []  # Store this for making bonds later
+            """adding section to remove other particles in reacting group
+            assuming input for head/tail indices is a list, with the anchor particle listed first"""
+            if len(bond_tail_index[mapping]) > 1:
                 extra_tail_particles = []
                 extra_tail_particles = bond_tail_index[mapping][1:]
                 for k in extra_tail_particles:
@@ -136,8 +138,8 @@ def backmap_snapshot_to_compound(
             temp_head = temp_comp.children[1]
             tail_comp.xyz = temp_tail.xyz
             head_comp.xyz = temp_head.xyz
-            '''maybe replace this section with just:
-            fg_compound.energy_minimize(steps=500)'''
+            """maybe replace this section with just:
+            fg_compound.energy_minimize(steps=500)"""
     return fg_compound
 
 
