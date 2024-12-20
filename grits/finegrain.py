@@ -9,18 +9,27 @@ import mbuild as mb
 import numpy as np
 import gsd.hoomd
 
-from grits.utils import align, get_hydrogen, get_index
+from grits.utils import align, get_hydrogen, get_index, reactant_dict
 
 def backmap_snapshot_to_compound(
         snapshot,
-        bead_mapping,
-        bond_head_index=dict(),
-        bond_tail_index=dict(),
+        bead_mapping=None,
+        bond_head_index=None,
+        bond_tail_index=None,
+        library_key=None,
         ref_distance=None,
         energy_minimize=False
 ):
     #TODO
     # assert all 3 dicts have the same keys
+    if (bead_mapping is None and bond_head_index is None and bond_tail_index is None) == (library_key is None):
+            raise ValueError(
+                "Please provide dictionaries or library key."
+            )
+    if library_key is not None:
+        bead_mapping=reactant_dict[library_key]['smiles']
+        bond_tail_index=reactant_dict[library_key]['tail_indices']
+        bond_head_index=reactant_dict[library_key]['head_indices']
     if not ref_distance:
         ref_distance = 1
     cg_snap = snapshot
@@ -40,14 +49,28 @@ def backmap_snapshot_to_compound(
         if bond_head_index and bond_tail_index:
             remove_atoms = [] # These will be removed
             anchor_particles = [] # Store this for making bonds later
-            for i in [bond_tail_index[mapping], bond_head_index[mapping]]:
+            '''adding section to remove other particles in reacting group
+            assuming input for head/tail indices is a list, with the anchor particle listed first'''
+            if len(bond_tail_index[mapping]) > 1: 
+                extra_tail_particles = []
+                extra_tail_particles = bond_tail_index[mapping][1:]
+                for k in extra_tail_particles:
+                    for l, particle in enumerate(comp.particles()):
+                        if l == k:
+                            remove_atoms.append(particle)
+            if len(bond_head_index[mapping]) > 1:
+                extra_head_particles = []
+                extra_head_particles = bond_head_index[mapping][1:]
+                for k in extra_head_particles:
+                    for l, particle in enumerate(comp.particles()):
+                        if l == k:
+                            remove_atoms.append(particle)
+            for i in [bond_tail_index[mapping][0], bond_head_index[mapping][0]]:
                 for j, particle in enumerate(comp.particles()):
                     if j == i:
                         remove_atoms.append(particle)  
                         anchor = [p for p in particle.direct_bonds()][0]
-                        anchor_particles.append(anchor)
-                        if particle.name != "H":#removes hydrogen when reacting group is -OH
-                            remove_atoms.append([p for p in particle.direct_bonds()][1])
+                        anchor_particles.append(anchor)  
             for particle in remove_atoms:
                 comp.remove(particle)
             # List of length 2 [tail particle index, head particle index]
@@ -111,6 +134,8 @@ def backmap_snapshot_to_compound(
             temp_head = temp_comp.children[1]
             tail_comp.xyz = temp_tail.xyz
             head_comp.xyz = temp_head.xyz
+            '''maybe replace this section with just:
+            fg_compound.energy_minimize(steps=500)'''
     return fg_compound
 
 
