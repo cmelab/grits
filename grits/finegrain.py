@@ -21,6 +21,32 @@ def backmap_snapshot_to_compound(
     ref_distance=None,
     energy_minimize=False,
 ):
+    """Backmap a fine-grained snapshot onto a coarse one.
+
+    Creates a fine-grained compound from a coarse one using the given parameters.
+
+    Parameters
+    ----------
+    snapshot : one frame of gsd trajectory
+
+    bead_mapping (string) : SMILES string of fine-grain monomer
+
+    bond_head_index (list of int) : index of polymer reaction, choose head to orient chain
+
+    bond_tail_index (list of int) : index of polymer reaction, choose tail to orient chain
+
+    library_key (string) : string key to dictionary, reactant_dict, with known bead_mapping, bond_head_index, and bond_tail_index
+
+    ref_distance (float) : distance between monomers
+
+    energy_minimize (bool) : Option to run a mbuild energy minimization.
+    
+
+    Returns
+    -------
+    :py:class:`mbuild.Compound`
+        The atomistic structure mapped onto the coarse-grained one.
+    """
     # TODO
     # assert all 3 dicts have the same keys
     if (
