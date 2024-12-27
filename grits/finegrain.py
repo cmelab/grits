@@ -40,7 +40,7 @@ def backmap_snapshot_to_compound(
     ref_distance (float) : distance between monomers
 
     energy_minimize (bool) : Option to run a mbuild energy minimization.
-    
+
 
     Returns
     -------
