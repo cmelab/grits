@@ -474,3 +474,21 @@ amber_dict = {
     "sx": ele.element_from_symbol("S"),
     "sy": ele.element_from_symbol("S"),
 }
+
+reactant_dict = {
+    "pps": {
+        "smiles": {"A": "c1ccc(S)cc1"},
+        "head_indices": {"A": [7]},
+        "tail_indices": {"A": [10]},
+    },
+    "polystyrene": {
+        "smiles": {"A": "C=CC1=CC=CC=C1"},
+        "head_indices": {"A": [9]},
+        "tail_indices": {"A": [10]},
+    },
+    "polyalanine": {
+        "smiles": {"A": "C[C@@H](C(=O)O)N"},
+        "head_indices": {"A": [12]},
+        "tail_indices": {"A": [4, 10]},
+    },
+}
