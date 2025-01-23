@@ -27,20 +27,32 @@ def backmap_snapshot_to_compound(
 
     Parameters
     ----------
-    snapshot : one frame of gsd trajectory
+    snapshot : gsd.hoomd.Frame
+        one frame of gsd trajectory
 
-    bead_mapping (string) : SMILES string of fine-grain monomer
+    bead_mapping : string, default None
+        SMILES string of fine-grain monomer
 
-    bond_head_index (list of int) : index of polymer reaction, choose head to orient chain
+    bond_head_index : list of int, default None
+        index of polymer reaction, choose head to orient chain
 
-    bond_tail_index (list of int) : index of polymer reaction, choose tail to orient chain
+    bond_tail_index : list of int, default None
+        index of polymer reaction, choose tail to orient chain
 
-    library_key (string) : string key to dictionary, reactant_dict, with known bead_mapping, bond_head_index, and bond_tail_index
+    library_key : string, default None
+        key to dictionary, reactant_dict, with known bead_mapping, bond_head_index, and bond_tail_index
 
-    ref_distance (float) : distance between monomers
+    ref_distance : float, default None
+        distance between monomers
 
+<<<<<<< HEAD
     energy_minimize (bool) : Option to run a mbuild energy minimization.
 
+=======
+    energy_minimize : bool, default False
+        Option to run a mbuild energy minimization.
+    
+>>>>>>> 2785a5d (updating format for doc strings)
 
     Returns
     -------
@@ -86,7 +98,7 @@ def backmap_snapshot_to_compound(
                     for l, particle in enumerate(comp.particles()):
                         if l == k:
                             remove_atoms.append(particle)
-            if len(bond_head_index[mapping]) > 1:
+            if len(bond_head_index[mapping]) > 1: #repeated if statement if reacting group is listed for head index
                 extra_head_particles = []
                 extra_head_particles = bond_head_index[mapping][1:]
                 for k in extra_head_particles:
