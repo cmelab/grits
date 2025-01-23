@@ -29,7 +29,7 @@ class Test_Backmap(BaseTest):
         bead_mapping = {"A": "C=CC1=CC=CC=C1"} # Mapping one A bead to 1 Polystyrene monomer
         head_indices = {"A": [10]}
         tail_indices = {"A": [9]}
-        
+
         fg_comp = backmap_snapshot_to_compound(
             snapshot=snap,
             bead_mapping=bead_mapping,
@@ -38,7 +38,7 @@ class Test_Backmap(BaseTest):
             ref_distance=0.3438,
             energy_minimize=False
         )
-        
+
         assert fg_comp.particles == snap.particles
         assert fg_comp.bonds == snap.bonds
 
@@ -49,15 +49,15 @@ class Test_Backmap(BaseTest):
             ref_distance=0.3438,
             energy_minimize=False
         )
-        
+
         assert fg_comp.particles == snap.particles
         assert fg_comp.bonds == snap.bonds
-        
+
     def test_backmap_snap_lists(snap):
         bead_mapping = {"A": "C[C@@H](C(=O)O)N"} # Mapping one A bead to 1 Polyalanine monomer
         head_indices = {"A":[4,10]}
         tail_indices = {"A":[12]}
-        
+
         fg_comp = backmap_snapshot_to_compound(
             snapshot=snap,
             bead_mapping=bead_mapping,
@@ -66,7 +66,7 @@ class Test_Backmap(BaseTest):
             ref_distance=0.3438,
             energy_minimize=False
         )
-        
+
         assert fg_comp.particles == snap.particles
         assert fg_comp.bonds == snap.bonds
 
@@ -75,7 +75,7 @@ class Test_Backmap(BaseTest):
         bead_mapping = {"A": "C[C@@H](C(=O)O)N"} # Mapping one A bead to 1 Polyalanine monomer
         head_indices = {"A":[4.5,10]}
         tail_indices = {"A":[12]}
-        
+
         fg_comp = backmap_snapshot_to_compound(
             snapshot=snap,
             bead_mapping=bead_mapping,
