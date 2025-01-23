@@ -24,3 +24,64 @@ class Test_Backmap(BaseTest):
 
         assert fg_alkane.n_bonds == alkane.n_bonds
         assert fg_alkane.n_particles == alkane.n_particles
+
+    def test_backmap_snap_smiles(snap):
+        bead_mapping = {"A": "C=CC1=CC=CC=C1"} # Mapping one A bead to 1 Polystyrene monomer
+        head_indices = {"A": [10]}
+        tail_indices = {"A": [9]}
+        
+        fg_comp = backmap_snapshot_to_compound(
+            snapshot=snap,
+            bead_mapping=bead_mapping,
+            bond_head_index=head_indices,
+            bond_tail_index=tail_indices,
+            ref_distance=0.3438,
+            energy_minimize=False
+        )
+        
+        assert fg_comp.particles == snap.particles
+        assert fg_comp.bonds == snap.bonds
+
+    def test_backmap_snap_library(snap):
+        fg_comp = backmap_snapshot_to_compound(
+            snapshot=snap,
+            library_key = 'polystyrene'
+            ref_distance=0.3438,
+            energy_minimize=False
+        )
+        
+        assert fg_comp.particles == snap.particles
+        assert fg_comp.bonds == snap.bonds
+        
+    def test_backmap_snap_lists(snap):
+        bead_mapping = {"A": "C[C@@H](C(=O)O)N"} # Mapping one A bead to 1 Polyalanine monomer
+        head_indices = {"A":[4,10]}
+        tail_indices = {"A":[12]}
+        
+        fg_comp = backmap_snapshot_to_compound(
+            snapshot=snap,
+            bead_mapping=bead_mapping,
+            bond_head_index=head_indices,
+            bond_tail_index=tail_indices,
+            ref_distance=0.3438,
+            energy_minimize=False
+        )
+        
+        assert fg_comp.particles == snap.particles
+        assert fg_comp.bonds == snap.bonds
+
+
+    def test_backmap_snap_not_int(snap):
+        bead_mapping = {"A": "C[C@@H](C(=O)O)N"} # Mapping one A bead to 1 Polyalanine monomer
+        head_indices = {"A":[4.5,10]}
+        tail_indices = {"A":[12]}
+        
+        fg_comp = backmap_snapshot_to_compound(
+            snapshot=snap,
+            bead_mapping=bead_mapping,
+            bond_head_index=head_indices,
+            bond_tail_index=tail_indices,
+            ref_distance=0.3438,
+            energy_minimize=False
+        )
+        pass #non-int should break code
