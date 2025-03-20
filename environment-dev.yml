@@ -4,7 +4,7 @@ channels:
 dependencies:
   - cmeutils >=1.3.0
   - ele
-  - freud >=3.0
+  - freud >=3.0,<3.2
   - gsd >=3.0
   - jupyterlab
   - mbuild >=0.18
