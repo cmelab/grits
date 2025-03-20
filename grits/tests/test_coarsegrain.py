@@ -1,4 +1,3 @@
-import tempfile
 from os import path
 
 import gsd.hoomd
@@ -353,9 +352,6 @@ class Test_CGSystem(BaseTest):
 
     def test_mass_scale(self, tmp_path):
         gsdfile = path.join(asset_dir, "benzene-aa.gsd")
-        with gsd.hoomd.open(gsdfile, "r") as traj:
-            init_mass = sum(traj[0].particles.mass)
-
         system = CG_System(
             gsdfile,
             beads={"_B": "c1ccccc1"},

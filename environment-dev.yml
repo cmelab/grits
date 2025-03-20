@@ -1,4 +1,4 @@
-name: grits
+name: grits-dev
 channels:
   - conda-forge
 dependencies:
@@ -12,5 +12,8 @@ dependencies:
   - numpy
   - openbabel
   - pip
+  - pre-commit
   - py3Dmol
+  - pytest
+  - pytest-cov
   - python >=3.10

@@ -38,7 +38,7 @@ class BaseTest:
         return filename
 
     @pytest.fixture
-    def alkane_mapping(self, cg_alkane):
+    def alkane_mapping(self, cg_alkane, tmpdir):
         filename = tmpdir.mkdir("sub").join("alkanemapping.json")
         cg_alkane.save_mapping(filename)
         return filename
