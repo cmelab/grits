@@ -9,7 +9,7 @@ dependencies:
   - sphinx_rtd_theme
   - cmeutils
   - ele
-  - freud
+  - freud>=3.0,<3.2
   - gsd
   - mbuild>=0.17
   - numpy
