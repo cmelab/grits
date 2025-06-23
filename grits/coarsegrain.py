@@ -139,7 +139,6 @@ class CG_Compound(Compound):
         """Format the CG_Compound representation."""
         return (
             f"<{self.name}: {self.n_particles} beads "
-            + f"(from {self.atomistic.n_particles} atoms), "
             + "pos=({:.4f},{: .4f},{: .4f}), ".format(*self.pos)
             + f"{self.n_bonds:d} bonds>"
         )
