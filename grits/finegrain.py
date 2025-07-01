@@ -2,10 +2,8 @@
 
 __all__ = ["backmap"]
 
-import itertools as it
-from collections import defaultdict
 
-from mbuild import Compound, Particle, load
+from mbuild import Compound, load
 
 from grits.utils import align, get_hydrogen, get_index
 

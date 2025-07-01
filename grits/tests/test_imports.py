@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 def test_imports():
     import grits
     import grits.coarsegrain

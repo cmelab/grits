@@ -2,37 +2,48 @@ name: pytest
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - grits/**
-      - environment.yml
+      - environment-dev.yml
       - .github/workflows/pytest.yml
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - grits/**
-      - environment.yml
+      - environment-dev.yml
       - .github/workflows/pytest.yml
-  # Allows workflow to be manually triggered
+  issue_comment:
+    types: [created]
+    branches: [ main ]
+    paths:
+      - grits/**
+      - environment-dev.yml
+      - .github/workflows/pytest.yml
+
   workflow_dispatch:
 
 jobs:
   pytest:
-    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        python-version: ['3.10', '3.11', '3.12']
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Build environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: mamba-org/setup-micromamba@v2
       with:
-        environment-file: environment.yml
-        miniforge-variant: Mambaforge
-        miniforge-version: 4.9.2-4
-        use-mamba: true
+        environment-file: environment-dev.yml
+        create-args: >-
+          python=${{ matrix.python-version }}
 
     - name: Install package
       shell: bash -l {0}
@@ -40,9 +51,10 @@ jobs:
 
     - name: Run pytest with coverage report
       shell: bash -l {0}
-      run: python -m pytest -v -rs --cov=./ --cov-report=xml
+      run: python -m pytest -rs -v --cov=./ --cov-report=xml
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v5
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml

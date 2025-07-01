@@ -5,10 +5,8 @@ import re
 import warnings
 
 import ele
-import freud
 import numpy as np
 import rowan
-from ele import element_from_symbol
 from mbuild.box import Box
 from mbuild.compound import Compound, Particle
 
@@ -52,7 +50,6 @@ def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
     shifted by half the box lengths
     """
     comp = Compound()
-    bond_array = snapshot.bonds.group
     n_atoms = snapshot.particles.N
 
     # gsd / hoomd v3
