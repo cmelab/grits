@@ -9,7 +9,7 @@ import numpy as np
 from cmeutils.geometry import angle_between_vectors
 from mbuild import Compound, Particle, load
 
-from grits.utils import align, get_hydrogen, get_index, reactant_dict
+from grits.utils import align, get_hydrogen, get_index, reactant_dict, get_cg_chain_ends, add_end_types, relabel_end_types_gsd
 
 
 def backmap_snapshot_to_compound(
@@ -84,8 +84,14 @@ def backmap_snapshot_to_compound(
     # Create atomistic compounds, remove hydrogens in the way of bonds
     compounds = dict()
     anchor_dict = dict()
-    for mapping in bead_mapping:
-        comp = mb.load(bead_mapping[mapping], smiles=True)
+    #duplicate mapping for end types
+    new_bead_mapping, new_types = add_end_types(bead_mapping)
+    #rename unique end types
+    head_idxs, tail_idxs = get_cg_chain_ends(cg_snap.bonds.group)
+    #add new types
+    
+    for mapping in new_bead_mapping:
+        comp = mb.load(new_bead_mapping[mapping], smiles=True)
         if bond_head_index and bond_tail_index:
             remove_atoms = []  # These will be removed
             anchor_particles = []  # Store this for making bonds later
@@ -163,6 +169,11 @@ def backmap_snapshot_to_compound(
         fg_compound.add_bond(
             particle_pair=[tail_comp_particle, head_comp_particle]
         )
+
+        #add back in reacting groups to the ends
+        head, tail = get_cg_chain_ends(cg_snap.bonds.group)
+        extra_tail_particles
+        extra_head_particles
         if energy_minimize:
             temp_head = mb.clone(head_comp)
             temp_tail = mb.clone(tail_comp)
