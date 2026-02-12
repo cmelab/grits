@@ -13,4 +13,4 @@ dependencies:
   - openbabel
   - pip
   - py3Dmol
-  - python >=3.12
+  - python >=3.10, <3.13
