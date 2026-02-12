@@ -41,6 +41,8 @@ jobs:
     - name: Build environment
       uses: mamba-org/setup-micromamba@v2
       with:
+        cache-environment: false
+        post-cleanup: 'all'
         environment-file: environment-dev.yml
         create-args: >-
           python=${{ matrix.python-version }}
