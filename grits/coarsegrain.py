@@ -733,6 +733,14 @@ class CG_System:
                 new_snap = gsd.hoomd.Frame()
                 position = []
                 mass = []
+                # make an empty lists for forces here
+                traj_lj_forces = []
+                traj_bond_forces = []
+                traj_angle_forces = []
+                traj_dihedral_forces = []
+                net_force = []
+                # make an empty list for velocity
+                velocity = []
                 orientation = [] if self.aniso_beads else None
                 f_box = freud.Box.from_box(s.configuration.box)
                 unwrap_pos = f_box.unwrap(
@@ -744,6 +752,40 @@ class CG_System:
                     mass += [
                         sum(s.particles.mass[x]) * self.mass_scale for x in inds
                     ]
+
+                    # do the force calculation here
+                    traj_lj_forces.append(
+                        np.add.reduce(
+                            s.log["particles/md/pair/LJ/forces"][inds], 1
+                        )
+                    )
+                    traj_bond_forces.append(
+                        np.add.reduce(
+                            s.log["particles/md/pair/LJ/forces"][inds], 1
+                        )
+                    )
+                    traj_angle_forces.append(
+                        np.add.reduce(
+                            s.log["particles/md/pair/LJ/forces"][inds], 1
+                        )
+                    )
+                    traj_dihedral_forces.append(
+                        np.add.reduce(
+                            s.log["particles/md/pair/LJ/forces"][inds], 1
+                        )
+                    )
+                    traj_lj_forces = np.squeeze(traj_lj_forces, axis=0)
+                    traj_bond_forces = np.squeeze(traj_bond_forces, axis=0)
+                    traj_angle_forces = np.squeeze(traj_angle_forces, axis=0)
+                    traj_dihedral_forces = np.squeeze(
+                        traj_dihedral_forces, axis=0
+                    )
+
+                    # do the velocity calculation here
+                    velocity += [
+                        np.mean(s.particles.velocity[x], axis=0) for x in inds
+                    ]
+
                     if self.aniso_beads:
                         for x in inds:
                             masses = s.particles.mass[x] * self.mass_scale
@@ -763,7 +805,13 @@ class CG_System:
                 position = np.vstack(position)
                 images = f_box.get_images(position)
                 position = f_box.wrap(position)
-
+                arr = [
+                    np.array(traj_lj_forces),
+                    np.array(traj_bond_forces),
+                    np.array(traj_angle_forces),
+                    np.array(traj_dihedral_forces),
+                ]
+                net_force = np.add.reduce(arr)
                 new_snap.configuration.box = s.configuration.box
                 new_snap.configuration.step = s.configuration.step
                 new_snap.particles.N = len(typeid)
@@ -772,6 +820,8 @@ class CG_System:
                 new_snap.particles.typeid = typeid.astype(int)
                 new_snap.particles.types = types
                 new_snap.particles.mass = mass
+                new_snap.particles.velocity = velocity
+                new_snap.log["net_force"] = np.array(net_force)
 
                 if N_bonds > 0:
                     new_snap.bonds.N = N_bonds
