@@ -23,7 +23,7 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         else:
-            return super(NumpyEncoder, self).default(obj)
+            return super().default(obj)
 
 
 def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):

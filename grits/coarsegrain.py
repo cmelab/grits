@@ -29,7 +29,7 @@ from grits.utils import (
     has_number,
 )
 
-__all__ = ["CG_Compound", "CG_System", "Bead"]
+__all__ = ["Bead", "CG_Compound", "CG_System"]
 
 
 class CG_Compound(Compound):
@@ -101,7 +101,7 @@ class CG_Compound(Compound):
         aniso_beads=False,
         **kwargs,
     ):
-        super(CG_Compound, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if (beads is None) == (mapping is None):
             raise ValueError(
                 "Please provide only one of either beads or mapping."
@@ -455,7 +455,7 @@ class Bead(Compound):
     def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
         self.orientation = orientation
-        super(Bead, self).__init__(element=None, **kwargs)
+        super().__init__(element=None, **kwargs)
 
 
 class CG_System:
