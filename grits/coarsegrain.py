@@ -29,7 +29,7 @@ from grits.utils import (
     has_number,
 )
 
-__all__ = ["CG_Compound", "CG_System", "Bead"]
+__all__ = ["Bead", "CG_Compound", "CG_System"]
 
 
 class CG_Compound(Compound):
@@ -101,7 +101,7 @@ class CG_Compound(Compound):
         aniso_beads=False,
         **kwargs,
     ):
-        super(CG_Compound, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if (beads is None) == (mapping is None):
             raise ValueError(
                 "Please provide only one of either beads or mapping."
@@ -120,7 +120,7 @@ class CG_Compound(Compound):
                 # to be set correctly.
                 with tempfile.NamedTemporaryFile() as f:
                     mol.write(format="mol2", filename=f.name, overwrite=True)
-                    mol = list(pybel.readfile("mol2", f.name))[0]
+                    mol = next(iter(pybel.readfile("mol2", f.name)))
 
                 mol.OBMol.AddHydrogens()  # mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
@@ -294,7 +294,11 @@ class CG_Compound(Compound):
         return filename
 
     def visualize(
-        self, show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
+        self,
+        show_ports=False,
+        color_scheme=None,
+        show_atomistic=False,
+        scale=1.0,
     ):  # pragma: no cover
         """Visualize the Compound using py3dmol.
 
@@ -322,6 +326,8 @@ class CG_Compound(Compound):
         -------
         view : py3Dmol.view
         """
+        if color_scheme is None:
+            color_scheme = {}
         if not run_from_ipython():
             raise RuntimeError(
                 "Visualization is only supported in Jupyter Notebooks."
@@ -455,7 +461,7 @@ class Bead(Compound):
     def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
         self.orientation = orientation
-        super(Bead, self).__init__(element=None, **kwargs)
+        super().__init__(element=None, **kwargs)
 
 
 class CG_System:
@@ -752,7 +758,7 @@ class CG_System:
                             heavy_positions = positions[
                                 np.where(masses > hmass)
                             ]
-                            major_axis, ab_idxs = get_major_axis(
+                            major_axis, _ab_idxs = get_major_axis(
                                 heavy_positions
                             )
                             orientation.append(get_quaternion(major_axis))

@@ -23,7 +23,7 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
         else:
-            return super(NumpyEncoder, self).default(obj)
+            return super().default(obj)
 
 
 def comp_from_snapshot(snapshot, indices, length_scale=1.0, mass_scale=1.0):
@@ -284,7 +284,7 @@ def get_com(particle_positions, particle_masses):
     return center_of_mass
 
 
-def get_quaternion(n1, n0=np.array([0, 0, 1])):
+def get_quaternion(n1, n0=(0, 0, 1)):
     """Calculate rotation quaternion from axis vectors.
 
     Calculate axis and angle of rotation given
@@ -295,7 +295,7 @@ def get_quaternion(n1, n0=np.array([0, 0, 1])):
     ----------
         n1 : numpy array
             numpy array that is the major axis vector.
-        n0 : numpy array
+        n0 : numpy array, default (0,0,1)
             numpy array that is used to define the default quaternion.
             Defaults to the Z-axis.
 
@@ -305,12 +305,15 @@ def get_quaternion(n1, n0=np.array([0, 0, 1])):
             numpy array that tells the position of the monomer in units
             of a quaternion.
     """
+    n0 = np.asarray(n0)
     if n1 is None:  # one atom in this bead -> default quaternion
         warnings.warn(
             "get_quaternion was called with None as input!\n\
                       Returning default orientation."
         )
         return np.array([0, 0, 0, 1])
+    else:
+        n1 = np.asarray(n1)
     V_axis = np.cross(n0, n1)
     theta_numerator = np.dot(n0, n1)
     theta_denominator = np.linalg.norm(n0) * np.linalg.norm(n1)

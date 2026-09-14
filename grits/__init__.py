@@ -13,10 +13,10 @@ except PackageNotFoundError:
     pass
 
 __all__ = [
-    "__version__",
+    "Bead",
     "CG_Compound",
     "CG_System",
-    "Bead",
+    "__version__",
     "backmap",
     "utils",
 ]

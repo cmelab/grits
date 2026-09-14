@@ -29,12 +29,12 @@ def backmap(cg_compound):
         """Set the particles of the fine-grained structure."""
         fine_grained = Compound()
 
-        anchors = dict()
+        anchors = {}
         for i, bead in enumerate(cg_compound):
             smiles = bead.smarts
             b = load(smiles, smiles=True)
             b.translate_to(bead.pos)
-            anchors[i] = dict()
+            anchors[i] = {}
             if cg_compound.anchors is not None:
                 for index in cg_compound.anchors[bead.name]:
                     anchors[i][index] = b[index]
@@ -45,7 +45,7 @@ def backmap(cg_compound):
         """Set the bonds for the fine-grained structure."""
         bonded_atoms = []
         remove_hs = []
-        rotated = {k: False for k in anchors.keys()}
+        rotated = {k: False for k in anchors}
         for name, inds in cg_compound.bond_map:
             for ibead, jbead in cg_compound.bonds():
                 names = [ibead.name, jbead.name]
@@ -61,12 +61,12 @@ def backmap(cg_compound):
                 try:
                     iatom = anchors[i].pop(fi)
                 except KeyError:
-                    fi = [x for x in inds if x in anchors[i]][0]
+                    fi = next(x for x in inds if x in anchors[i])
                     iatom = anchors[i].pop(fi)
                 try:
                     jatom = anchors[j].pop(fj)
                 except KeyError:
-                    fj = [x for x in inds if x in anchors[j]][0]
+                    fj = next(x for x in inds if x in anchors[j])
                     jatom = anchors[j].pop(fj)
 
                 hi = get_hydrogen(fine_grained, iatom)
