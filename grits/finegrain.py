@@ -1,13 +1,9 @@
 """GRiTS: Fine-graining tools."""
 
-import itertools as it
-from collections import defaultdict
-
-import gsd.hoomd
 import mbuild as mb
 import numpy as np
 from cmeutils.geometry import angle_between_vectors
-from mbuild import Compound, Particle, load
+from mbuild import Compound, load
 
 from grits.utils import align, get_hydrogen, get_index, reactant_dict
 
