@@ -12,6 +12,27 @@ from mbuild import Compound, Particle, load
 from grits.utils import align, get_hydrogen, get_index, reactant_dict, get_cg_chain_ends, add_end_types, relabel_end_types_gsd
 
 
+def _build_template(smiles, tail_indices, head_indices, remove_tail, remove_head):
+    """Load a monomer and remove reacting atoms only on the requested sides.
+
+    Returns the compound and (tail_anchor_index, head_anchor_index).
+    """
+    comp = mb.load(smiles, smiles=True)
+    particles = list(comp.particles())
+    # Anchor = atom bonded to the first listed (leaving) atom on each side
+    tail_anchor = [p for p in particles[tail_indices[0]].direct_bonds()][0]
+    head_anchor = [p for p in particles[head_indices[0]].direct_bonds()][0]
+    remove_atoms = []
+    if remove_tail:
+        remove_atoms += [particles[i] for i in tail_indices]
+    if remove_head:
+        remove_atoms += [particles[i] for i in head_indices]
+    for particle in remove_atoms:
+        comp.remove(particle)
+    particles = list(comp.particles())
+    return comp, (particles.index(tail_anchor), particles.index(head_anchor))
+
+
 def backmap_snapshot_to_compound(
     snapshot,
     bead_mapping=None,
@@ -45,22 +66,15 @@ def backmap_snapshot_to_compound(
         ref_distance : float, default None
             distance between monomers
 
-    <<<<<<< HEAD
-        energy_minimize (bool) : Option to run a mbuild energy minimization.
-
-    =======
         energy_minimize : bool, default False
             Option to run a mbuild energy minimization.
-
-    >>>>>>> 2785a5d (updating format for doc strings)
 
         Returns
         -------
         :py:class:`mbuild.Compound`
             The atomistic structure mapped onto the coarse-grained one.
     """
-    # TODO
-    # assert all 3 dicts have the same keys
+    
     if (
         bead_mapping is None
         and bond_head_index is None
@@ -81,60 +95,25 @@ def backmap_snapshot_to_compound(
         lengths=[box[0], box[1], box[2]], angles=[90.0, 90.0, 90.0]
     )
     fg_compound.box = mb_box
-    # Create atomistic compounds, remove hydrogens in the way of bonds
-    compounds = dict()
-    anchor_dict = dict()
-    #duplicate mapping for end types
-    new_bead_mapping, new_types = add_end_types(bead_mapping)
-    #rename unique end types
-    head_idxs, tail_idxs = get_cg_chain_ends(cg_snap.bonds.group)
-    #add new types
-    
-    for mapping in new_bead_mapping:
-        comp = mb.load(new_bead_mapping[mapping], smiles=True)
-        if bond_head_index and bond_tail_index:
-            remove_atoms = []  # These will be removed
-            anchor_particles = []  # Store this for making bonds later
-            """adding section to remove other particles in reacting group
-            assuming input for head/tail indices is a list, with the anchor particle listed first"""
-            if len(bond_tail_index[mapping]) > 1:
-                extra_tail_particles = []
-                extra_tail_particles = bond_tail_index[mapping][1:]
-                for k in extra_tail_particles:
-                    for l, particle in enumerate(comp.particles()):
-                        if l == k:
-                            remove_atoms.append(particle)
-            if (
-                len(bond_head_index[mapping]) > 1
-            ):  # repeated if statement if reacting group is listed for head index
-                extra_head_particles = []
-                extra_head_particles = bond_head_index[mapping][1:]
-                for k in extra_head_particles:
-                    for l, particle in enumerate(comp.particles()):
-                        if l == k:
-                            remove_atoms.append(particle)
-            for i in [bond_tail_index[mapping][0], bond_head_index[mapping][0]]:
-                for j, particle in enumerate(comp.particles()):
-                    if j == i:
-                        remove_atoms.append(particle)
-                        anchor = [p for p in particle.direct_bonds()][0]
-                        anchor_particles.append(anchor)
-            for particle in remove_atoms:
-                comp.remove(particle)
-            # List of length 2 [tail particle index, head particle index]
-            anchor_particle_indices = []
-            for anchor in anchor_particles:
-                for i, p in enumerate(comp.particles()):
-                    if p == anchor:
-                        anchor_particle_indices.append(i)
-            anchor_dict[mapping] = tuple(anchor_particle_indices)
 
-        compounds[mapping] = comp
+    # Beads that bond via their head side (group[0]) or tail side (group[1])
+    bonds_on_head = set(int(i) for i in cg_snap.bonds.group[:, 0])
+    bonds_on_tail = set(int(i) for i in cg_snap.bonds.group[:, 1])
 
+    compounds = dict()  # (bead_type, remove_tail, remove_head) -> (comp, anchors)
     finished_beads = set()
     bead_to_comp_dict = dict()
+    bead_to_anchors = dict()
     mb_compounds = []
-    for group in cg_snap.bonds.group:
+    n_bonds = len(cg_snap.bonds.group)
+    print_every = max(1, n_bonds // 20)  # ~20 updates total
+    for bond_count, group in enumerate(cg_snap.bonds.group, start=1):
+        if bond_count % print_every == 0 or bond_count == n_bonds:
+            print(
+                f"Backmapping bond {bond_count}/{n_bonds} "
+                f"({100 * bond_count / n_bonds:.0f}%)",
+                flush=True,
+            )
         cg_bond_vec = (
             cg_snap.particles.position[group[1]]
             - cg_snap.particles.position[group[0]]
@@ -145,10 +124,24 @@ def backmap_snapshot_to_compound(
                 bead_type = cg_snap.particles.types[
                     cg_snap.particles.typeid[bead_index]
                 ]
+                key = (
+                    bead_type,
+                    int(bead_index) in bonds_on_tail,  # remove tail side?
+                    int(bead_index) in bonds_on_head,  # remove head side?
+                )
+                if key not in compounds:
+                    compounds[key] = _build_template(
+                        bead_mapping[bead_type],
+                        bond_tail_index[bead_type],
+                        bond_head_index[bead_type],
+                        remove_tail=key[1],
+                        remove_head=key[2],
+                    )
+                template, anchors = compounds[key]
                 bead_pos = cg_snap.particles.position[bead_index] * ref_distance
-                comp = mb.clone(compounds[bead_type])
-                tail_pos = comp[anchor_particle_indices[1]].xyz[0]
-                head_pos = comp[anchor_particle_indices[0]].xyz[0]
+                comp = mb.clone(template)
+                tail_pos = comp[anchors[1]].xyz[0]
+                head_pos = comp[anchors[0]].xyz[0]
                 head_tail_vec = tail_pos - head_pos
                 head_tail_vec = head_tail_vec / np.linalg.norm(head_tail_vec)
                 normal_vec = np.cross(head_tail_vec, cg_bond_vec)
@@ -159,27 +152,25 @@ def backmap_snapshot_to_compound(
                 comp.translate_to(bead_pos + pos_adjust)
                 mb_compounds.append(comp)
                 bead_to_comp_dict[bead_index] = comp
+                bead_to_anchors[bead_index] = anchors
                 finished_beads.add(bead_index)
                 fg_compound.add(comp)
 
+        tail_anchor_idx = bead_to_anchors[group[0]][1]
+        head_anchor_idx = bead_to_anchors[group[1]][0]
         tail_comp = bead_to_comp_dict[group[0]]
-        tail_comp_particle = tail_comp[anchor_particle_indices[1]]
+        tail_comp_particle = tail_comp[tail_anchor_idx]
         head_comp = bead_to_comp_dict[group[1]]
-        head_comp_particle = head_comp[anchor_particle_indices[0]]
+        head_comp_particle = head_comp[head_anchor_idx]
         fg_compound.add_bond(
             particle_pair=[tail_comp_particle, head_comp_particle]
         )
-
-        #add back in reacting groups to the ends
-        head, tail = get_cg_chain_ends(cg_snap.bonds.group)
-        extra_tail_particles
-        extra_head_particles
         if energy_minimize:
             temp_head = mb.clone(head_comp)
             temp_tail = mb.clone(tail_comp)
             temp_comp = mb.Compound(subcompounds=[temp_tail, temp_head])
-            tail_comp_particle = temp_tail[anchor_particle_indices[1]]
-            head_comp_particle = temp_head[anchor_particle_indices[0]]
+            tail_comp_particle = temp_tail[tail_anchor_idx]
+            head_comp_particle = temp_head[head_anchor_idx]
             temp_comp.add_bond(
                 particle_pair=[tail_comp_particle, head_comp_particle]
             )
@@ -189,10 +180,7 @@ def backmap_snapshot_to_compound(
             temp_head = temp_comp.children[1]
             tail_comp.xyz = temp_tail.xyz
             head_comp.xyz = temp_head.xyz
-            """maybe replace this section with just:
-            fg_compound.energy_minimize(steps=500)"""
     return fg_compound
-
 
 def backmap_compound(cg_compound):
     """Backmap a fine-grained representation onto a coarse one.
