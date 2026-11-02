@@ -402,10 +402,11 @@ def num2str(num):
         return chr(num + 65)
     return "".join([chr(num // 26 + 64), chr(num % 26 + 65)])
 
+
 def get_cg_chain_ends(bonds):
     """Find the chain end particle index from bond topology.
 
-    Differentiate between head and tail ends. This is written for fine-graining, and determining the locations that need a hydrogen added to the end. 
+    Differentiate between head and tail ends. This is written for fine-graining, and determining the locations that need a hydrogen added to the end.
 
     Parameters
     ----------
@@ -436,6 +437,7 @@ def get_cg_chain_ends(bonds):
 
     return head, tail
 
+
 def add_end_types(bead_mapping):
     new_entries = {}
 
@@ -451,7 +453,10 @@ def add_end_types(bead_mapping):
     new_types = list(new_entries.keys())
     return bead_mapping, new_types
 
-def relabel_end_types_gsd(og_traj,length,num_center_mol, start=0, stop=None, stride=1):
+
+def relabel_end_types_gsd(
+    og_traj, length, num_center_mol, start=0, stop=None, stride=1
+):
     """
     length = length of molecules
     num_center_mol = number of molecules from the bead (integer)
@@ -461,13 +466,18 @@ def relabel_end_types_gsd(og_traj,length,num_center_mol, start=0, stop=None, str
     with gsd.hoomd.open("new_traj.gsd", "w") as new_traj:
         for frame in og_traj:
             frame.particles.types.append("B")
-            for pos in frame.particles.position[int(length/2)::length]: 
-                start_bead = frame.particles.position[int(length/2)+num_center_mol]
+            for pos in frame.particles.position[int(length / 2) :: length]:
+                start_bead = frame.particles.position[
+                    int(length / 2) + num_center_mol
+                ]
                 print(start_bead)
-                stop_bead = frame.particles.position[int(length/2)-num_center_mol]
+                stop_bead = frame.particles.position[
+                    int(length / 2) - num_center_mol
+                ]
             frame.particles.typeid[start_bead:stop_bead] = 1
             new_traj.append(frame)
-    return(new_traj)
+    return new_traj
+
 
 amber_dict = {
     "c": ele.element_from_symbol("C"),

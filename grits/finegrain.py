@@ -5,10 +5,17 @@ import numpy as np
 from cmeutils.geometry import angle_between_vectors
 from mbuild import Compound, load
 
-from grits.utils import align, get_hydrogen, get_index, reactant_dict, get_cg_chain_ends, add_end_types, relabel_end_types_gsd
+from grits.utils import (
+    align,
+    get_hydrogen,
+    get_index,
+    reactant_dict,
+)
 
 
-def _build_template(smiles, tail_indices, head_indices, remove_tail, remove_head):
+def _build_template(
+    smiles, tail_indices, head_indices, remove_tail, remove_head
+):
     """Load a monomer and remove reacting atoms only on the requested sides.
 
     Returns the compound and (tail_anchor_index, head_anchor_index).
@@ -40,37 +47,37 @@ def backmap_snapshot_to_compound(
 ):
     """Backmap a fine-grained snapshot onto a coarse one.
 
-        Creates a fine-grained compound from a coarse one using the given parameters.
+    Creates a fine-grained compound from a coarse one using the given parameters.
 
-        Parameters
-        ----------
-        snapshot : gsd.hoomd.Frame
-            one frame of gsd trajectory
+    Parameters
+    ----------
+    snapshot : gsd.hoomd.Frame
+        one frame of gsd trajectory
 
-        bead_mapping : string, default None
-            SMILES string of fine-grain monomer
+    bead_mapping : string, default None
+        SMILES string of fine-grain monomer
 
-        bond_head_index : list of int, default None
-            index of polymer reaction, choose head to orient chain
+    bond_head_index : list of int, default None
+        index of polymer reaction, choose head to orient chain
 
-        bond_tail_index : list of int, default None
-            index of polymer reaction, choose tail to orient chain
+    bond_tail_index : list of int, default None
+        index of polymer reaction, choose tail to orient chain
 
-        library_key : string, default None
-            key to dictionary, reactant_dict, with known bead_mapping, bond_head_index, and bond_tail_index
+    library_key : string, default None
+        key to dictionary, reactant_dict, with known bead_mapping, bond_head_index, and bond_tail_index
 
-        ref_distance : float, default None
-            distance between monomers
+    ref_distance : float, default None
+        distance between monomers
 
-        energy_minimize : bool, default False
-            Option to run a mbuild energy minimization.
+    energy_minimize : bool, default False
+        Option to run a mbuild energy minimization.
 
-        Returns
-        -------
-        :py:class:`mbuild.Compound`
-            The atomistic structure mapped onto the coarse-grained one.
+    Returns
+    -------
+    :py:class:`mbuild.Compound`
+        The atomistic structure mapped onto the coarse-grained one.
     """
-    
+
     if (
         bead_mapping is None
         and bond_head_index is None
@@ -96,7 +103,9 @@ def backmap_snapshot_to_compound(
     bonds_on_head = set(int(i) for i in cg_snap.bonds.group[:, 0])
     bonds_on_tail = set(int(i) for i in cg_snap.bonds.group[:, 1])
 
-    compounds = dict()  # (bead_type, remove_tail, remove_head) -> (comp, anchors)
+    compounds = (
+        dict()
+    )  # (bead_type, remove_tail, remove_head) -> (comp, anchors)
     finished_beads = set()
     bead_to_comp_dict = dict()
     bead_to_anchors = dict()
@@ -177,6 +186,7 @@ def backmap_snapshot_to_compound(
             tail_comp.xyz = temp_tail.xyz
             head_comp.xyz = temp_head.xyz
     return fg_compound
+
 
 def backmap_compound(cg_compound):
     """Backmap a fine-grained representation onto a coarse one.
