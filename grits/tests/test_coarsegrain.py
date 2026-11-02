@@ -1,4 +1,3 @@
-import tempfile
 from os import path
 
 import gsd.hoomd
@@ -26,7 +25,7 @@ class Test_CGCompound(BaseTest):
         assert cg_methane.n_particles == 1
         assert isinstance(cg_methane, CG_Compound)
 
-        types = set([i.name for i in cg_methane.particles()])
+        types = {i.name for i in cg_methane.particles()}
         assert "_A" in types
         assert len(types) == 1
         assert np.isclose(cg_methane.mass, 16.043, atol=1e-5)
@@ -39,7 +38,7 @@ class Test_CGCompound(BaseTest):
         assert cg_methane.n_particles == 1
         assert isinstance(cg_methane, CG_Compound)
 
-        types = set([i.name for i in cg_methane.particles()])
+        types = {i.name for i in cg_methane.particles()}
         assert "_A" in types
         assert len(types) == 1
         assert np.isclose(cg_methane.mass, 16.043, atol=1e-5)
@@ -55,7 +54,7 @@ class Test_CGCompound(BaseTest):
         assert cg_p3ht.n_particles == 48
         assert isinstance(cg_p3ht, CG_Compound)
 
-        types = set([i.name for i in cg_p3ht.particles()])
+        types = {i.name for i in cg_p3ht.particles()}
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
@@ -70,7 +69,7 @@ class Test_CGCompound(BaseTest):
         assert cg_p3ht.n_particles == 48
         assert isinstance(cg_p3ht, CG_Compound)
 
-        types = set([i.name for i in cg_p3ht.particles()])
+        types = {i.name for i in cg_p3ht.particles()}
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
@@ -88,7 +87,7 @@ class Test_CGCompound(BaseTest):
         assert cg_p3ht.n_particles == 48
         assert isinstance(cg_p3ht, CG_Compound)
 
-        types = set([i.name for i in cg_p3ht.particles()])
+        types = {i.name for i in cg_p3ht.particles()}
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
@@ -103,7 +102,7 @@ class Test_CGCompound(BaseTest):
         assert cg_p3ht.n_particles == 48
         assert isinstance(cg_p3ht, CG_Compound)
 
-        types = set([i.name for i in cg_p3ht.particles()])
+        types = {i.name for i in cg_p3ht.particles()}
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
@@ -116,7 +115,7 @@ class Test_CGCompound(BaseTest):
         assert cg_p3ht.n_particles == 48
         assert isinstance(cg_p3ht, CG_Compound)
 
-        types = set([i.name for i in cg_p3ht.particles()])
+        types = {i.name for i in cg_p3ht.particles()}
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
@@ -127,7 +126,7 @@ class Test_CGCompound(BaseTest):
         assert cg_p3ht.n_particles == 48
         assert isinstance(cg_p3ht, CG_Compound)
 
-        types = set([i.name for i in cg_p3ht.particles()])
+        types = {i.name for i in cg_p3ht.particles()}
         assert "_B" in types
         assert "_S" in types
         assert len(types) == 2
@@ -140,7 +139,7 @@ class Test_CGCompound(BaseTest):
         assert cg_methane.n_particles == 1
         assert isinstance(cg_methane, CG_Compound)
 
-        types = set([i.name for i in cg_methane.particles()])
+        types = {i.name for i in cg_methane.particles()}
         assert "_A" in types
         assert len(types) == 1
 
@@ -152,7 +151,7 @@ class Test_CGCompound(BaseTest):
         assert cg_methane.n_particles == 1
         assert isinstance(cg_methane, CG_Compound)
 
-        types = set([i.name for i in cg_methane.particles()])
+        types = {i.name for i in cg_methane.particles()}
         assert "_A" in types
         assert len(types) == 1
         for particle in cg_methane.particles():
@@ -353,9 +352,6 @@ class Test_CGSystem(BaseTest):
 
     def test_mass_scale(self, tmp_path):
         gsdfile = path.join(asset_dir, "benzene-aa.gsd")
-        with gsd.hoomd.open(gsdfile, "r") as traj:
-            init_mass = sum(traj[0].particles.mass)
-
         system = CG_System(
             gsdfile,
             beads={"_B": "c1ccccc1"},

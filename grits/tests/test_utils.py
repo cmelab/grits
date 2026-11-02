@@ -57,7 +57,7 @@ class TestAnisoUtils(BaseTest):
         from grits.utils import get_heavy_atoms
 
         with butane_gsd as f:
-            assert type(f) == gsd.hoomd.HOOMDTrajectory
+            assert type(f) is gsd.hoomd.HOOMDTrajectory
             frame = f[0]
             particles = frame.particles
             heavy_positions, heavy_masses = get_heavy_atoms(particles)

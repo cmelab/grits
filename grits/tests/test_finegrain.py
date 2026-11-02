@@ -1,4 +1,3 @@
-import pytest
 from base_test import BaseTest
 from mbuild import Compound
 

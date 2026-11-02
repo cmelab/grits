@@ -10,7 +10,10 @@ import ele
 import freud
 import gsd.hoomd
 import numpy as np
-from cmeutils.gsd_utils import get_molecule_cluster, identify_snapshot_connections
+from cmeutils.gsd_utils import (
+    get_molecule_cluster,
+    identify_snapshot_connections,
+)
 from ele import element_from_symbol
 from mbuild import Compound, clone
 from mbuild.utils.io import run_from_ipython
@@ -26,7 +29,7 @@ from grits.utils import (
     has_number,
 )
 
-__all__ = ["CG_Compound", "CG_System", "Bead"]
+__all__ = ["Bead", "CG_Compound", "CG_System"]
 
 
 class CG_Compound(Compound):
@@ -98,7 +101,7 @@ class CG_Compound(Compound):
         aniso_beads=False,
         **kwargs,
     ):
-        super(CG_Compound, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if (beads is None) == (mapping is None):
             raise ValueError(
                 "Please provide only one of either beads or mapping."
@@ -117,11 +120,11 @@ class CG_Compound(Compound):
                 # to be set correctly.
                 with tempfile.NamedTemporaryFile() as f:
                     mol.write(format="mol2", filename=f.name, overwrite=True)
-                    mol = list(pybel.readfile("mol2", f.name))[0]
+                    mol = next(iter(pybel.readfile("mol2", f.name)))
 
                 mol.OBMol.AddHydrogens()  # mol.addh()
                 n_atoms2 = mol.OBMol.NumAtoms()
-                print(f"Added {n_atoms2-n_atoms} hydrogens.")
+                print(f"Added {n_atoms2 - n_atoms} hydrogens.")
 
             self._set_mapping(beads, mol, allow_overlap)
         elif mapping is not None:
@@ -136,7 +139,6 @@ class CG_Compound(Compound):
         """Format the CG_Compound representation."""
         return (
             f"<{self.name}: {self.n_particles} beads "
-            + f"(from {self.atomistic.n_particles} atoms), "
             + "pos=({:.4f},{: .4f},{: .4f}), ".format(*self.pos)
             + f"{self.n_bonds:d} bonds>"
         )
@@ -189,7 +191,7 @@ class CG_Compound(Compound):
         n_atoms = mol.OBMol.NumAtoms()
         if n_atoms != len(seen):
             # TODO this warning seems to trigger on re-adding H into ring-containing UA systems
-            warn(f"Some atoms have been left out of coarse-graining!")
+            warn("Some atoms have been left out of coarse-graining!")
             # TODO make this more informative
         self.mapping = mapping
 
@@ -292,7 +294,11 @@ class CG_Compound(Compound):
         return filename
 
     def visualize(
-        self, show_ports=False, color_scheme={}, show_atomistic=False, scale=1.0
+        self,
+        show_ports=False,
+        color_scheme=None,
+        show_atomistic=False,
+        scale=1.0,
     ):  # pragma: no cover
         """Visualize the Compound using py3dmol.
 
@@ -320,6 +326,8 @@ class CG_Compound(Compound):
         -------
         view : py3Dmol.view
         """
+        if color_scheme is None:
+            color_scheme = {}
         if not run_from_ipython():
             raise RuntimeError(
                 "Visualization is only supported in Jupyter Notebooks."
@@ -453,7 +461,7 @@ class Bead(Compound):
     def __init__(self, smarts=None, orientation=None, **kwargs):
         self.smarts = smarts
         self.orientation = orientation
-        super(Bead, self).__init__(element=None, **kwargs)
+        super().__init__(element=None, **kwargs)
 
 
 class CG_System:
@@ -581,12 +589,12 @@ class CG_System:
         # If molecule length is different, it will be assumed to be different
         mol_lengths = [len(i) for i in mol_inds]
         uniq_mol_inds = []
-        for l in set(mol_lengths):
-            uniq_mol_inds.append(mol_inds[mol_lengths.index(l)])
+        for length in set(mol_lengths):
+            uniq_mol_inds.append(mol_inds[mol_lengths.index(length)])
 
         # Convert each unique molecule to a compound
         for inds in uniq_mol_inds:
-            l = len(inds)
+            inds_length = len(inds)
             mb_comp = comp_from_snapshot(
                 snapshot=snap,
                 indices=inds,
@@ -603,7 +611,10 @@ class CG_System:
                 )
             )
             self._inds.append(
-                [mol_inds[i] for i in np.where(np.array(mol_lengths) == l)[0]]
+                [
+                    mol_inds[i]
+                    for i in np.where(np.array(mol_lengths) == inds_length)[0]
+                ]
             )
 
     def _set_mapping(self):
@@ -713,14 +724,15 @@ class CG_System:
                 )
                 if bond_pair not in bond_types:
                     bond_types.append(bond_pair)
-                _id = np.where(np.array(bond_types) == bond_pair)[0]
+                _id = bond_types.index(bond_pair)
                 bond_ids.append(_id)
         else:
             bond_types = None
 
-        with gsd.hoomd.open(cg_gsdfile, "w") as new, gsd.hoomd.open(
-            self.gsdfile, "r"
-        ) as old:
+        with (
+            gsd.hoomd.open(cg_gsdfile, "w") as new,
+            gsd.hoomd.open(self.gsdfile, "r") as old,
+        ):
             # stop being None is fine; slicing [0:None] gives whole array,
             # even in edge case where there's only one or two frames
             for s in old[start:stop:stride]:
@@ -746,7 +758,7 @@ class CG_System:
                             heavy_positions = positions[
                                 np.where(masses > hmass)
                             ]
-                            major_axis, ab_idxs = get_major_axis(
+                            major_axis, _ab_idxs = get_major_axis(
                                 heavy_positions
                             )
                             orientation.append(get_quaternion(major_axis))
@@ -770,9 +782,9 @@ class CG_System:
                 if N_bonds > 0:
                     new_snap.bonds.N = N_bonds
                     new_snap.bonds.group = self._bond_array
-                    new_snap.bonds.typeid = np.array(bond_ids)
+                    new_snap.bonds.typeid = bond_ids
                     if bond_types is not None:
-                        new_snap.bonds.types = np.array(bond_types)
+                        new_snap.bonds.types = bond_types
                     else:
                         new_snap.bonds.types = None
                     new_snap.bonds.type_shapes = bond_type_shapes
