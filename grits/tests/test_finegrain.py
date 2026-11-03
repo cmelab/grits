@@ -84,12 +84,12 @@ class Test_Backmap(BaseTest):
             energy_minimize=False
         )
         pass #non-int should break code
-    
+
     def test_back_snap_end_hydrogens(snap): #pass in a snap with one molecule of length 1
         bead_mapping = {"A": "CC"}
         head_indices = {"A":1}#this is a guess
         tail_indices = {"A":8}#this is a guess
-        
+
         fg_comp = backmap_snapshot_to_compound(
             snapshot=snap,
             bead_mapping=bead_mapping,
