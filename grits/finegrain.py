@@ -78,11 +78,17 @@ def backmap_snapshot_to_compound(
         The atomistic structure mapped onto the coarse-grained one.
     """
 
-    if (
-        bead_mapping is None
-        and bond_head_index is None
-        and bond_tail_index is None
-    ) == (library_key is None):
+    provided = (
+        bead_mapping is not None,
+        bond_head_index is not None,
+        bond_tail_index is not None,
+    )
+    if (library_key is None and not all(provided)) or (
+        library_key is not None and any(provided)
+    ):
+        raise ValueError(
+            "Provide all three mapping dictionaries or a library key, not both."
+        )
         raise ValueError("Please provide dictionaries or library key.")
     if library_key is not None:
         bead_mapping = reactant_dict[library_key]["smiles"]
@@ -94,8 +100,8 @@ def backmap_snapshot_to_compound(
     fg_compound = mb.Compound()
     box = cg_snap.configuration.box * ref_distance
     pos_adjust = np.array([box[0] / 2, box[1] / 2, box[2] / 2])
-    mb_box = mb.box.Box.from_lengths_angles(
-        lengths=[box[0], box[1], box[2]], angles=[90.0, 90.0, 90.0]
+    mb_box = mb.box.Box.from_lengths_tilt_factors(
+        lengths=box[:3], tilt_factors=box[3:]
     )
     fg_compound.box = mb_box
 

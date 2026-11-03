@@ -410,7 +410,7 @@ def get_cg_chain_ends(bonds):
 
     Parameters
     ----------
-    bodns : array
+    bonds : array
         Bonds from snap.bonds.group
 
     Returns
