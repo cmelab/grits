@@ -3,7 +3,6 @@
 import json
 import re
 import warnings
-from collections import defaultdict
 
 import ele
 import numpy as np
