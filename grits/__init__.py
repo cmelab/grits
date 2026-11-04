@@ -4,7 +4,9 @@ from importlib.metadata import PackageNotFoundError, version
 
 from . import utils
 from .coarsegrain import Bead, CG_Compound, CG_System
-from .finegrain import backmap
+from .finegrain import backmap_compound
+from .finegrain import backmap_compound as backmap
+from .finegrain import backmap_snapshot_to_compound
 
 try:
     __version__ = version("grits")
