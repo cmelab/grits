@@ -12,7 +12,6 @@ from grits.utils import (
     reactant_dict,
 )
 
-
 def _build_template(
     smiles, tail_indices, head_indices, remove_tail, remove_head
 ):
@@ -34,6 +33,47 @@ def _build_template(
         comp.remove(particle)
     particles = list(comp.particles())
     return comp, (particles.index(tail_anchor), particles.index(head_anchor))
+
+
+def _minimum_image(vec, box):
+    """Apply the minimum-image convention to a displacement in a HOOMD box."""
+    Lx, Ly, Lz, xy, xz, yz = box
+    box_matrix = np.array(
+        [[Lx, xy * Ly, xz * Lz], [0, Ly, yz * Lz], [0, 0, Lz]]
+    )
+    frac = np.linalg.solve(box_matrix, vec)
+    return box_matrix @ (frac - np.round(frac))
+
+
+def _orient_bonds(bonds, n_particles):
+    """Direct each bond along its chain, independent of stored pair order.
+
+    Each chain is walked from its lowest-index end bead, so the result only
+    depends on connectivity.
+    """
+    neighbors = {i: [] for i in range(n_particles)}
+    for i, j in bonds:
+        neighbors[int(i)].append(int(j))
+        neighbors[int(j)].append(int(i))
+    # Chain ends first so each walk starts at a terminal bead
+    starts = sorted(neighbors, key=lambda i: (len(neighbors[i]) != 1, i))
+    visited = set()
+    oriented = []
+    for start in starts:
+        if start in visited:
+            continue
+        visited.add(start)
+        stack = [start]
+        while stack:
+            i = stack.pop()
+            for j in neighbors[i]:
+                if j not in visited:
+                    visited.add(j)
+                    oriented.append((i, j))
+                    stack.append(j)
+    if len(oriented) != len(bonds):
+        raise ValueError("Ring structures are not supported.")
+    return np.array(oriented, dtype=int).reshape(-1, 2)
 
 
 def backmap_snapshot_to_compound(
@@ -89,7 +129,6 @@ def backmap_snapshot_to_compound(
         raise ValueError(
             "Provide all three mapping dictionaries or a library key, not both."
         )
-        raise ValueError("Please provide dictionaries or library key.")
     if library_key is not None:
         bead_mapping = reactant_dict[library_key]["smiles"]
         bond_tail_index = reactant_dict[library_key]["tail_indices"]
@@ -105,68 +144,88 @@ def backmap_snapshot_to_compound(
     )
     fg_compound.box = mb_box
 
+    # Orient bonds along each chain so head/tail don't depend on pair order
+    bond_groups = _orient_bonds(
+        cg_snap.bonds.group if cg_snap.bonds.N else [], cg_snap.particles.N
+    )
     # Beads that bond via their head side (group[0]) or tail side (group[1])
-    bonds_on_head = set(int(i) for i in cg_snap.bonds.group[:, 0])
-    bonds_on_tail = set(int(i) for i in cg_snap.bonds.group[:, 1])
+    bonds_on_head = set(int(i) for i in bond_groups[:, 0])
+    bonds_on_tail = set(int(i) for i in bond_groups[:, 1])
+
+    # Minimum-image bond vectors; each bead is oriented along its first bond
+    bead_to_bond_vec = dict()
+    image_shifts = []
+    for group in bond_groups:
+        raw_vec = (
+            cg_snap.particles.position[group[1]]
+            - cg_snap.particles.position[group[0]]
+        )
+        cg_bond_vec = _minimum_image(raw_vec, cg_snap.configuration.box)
+        image_shifts.append((cg_bond_vec - raw_vec) * ref_distance)
+        cg_bond_vec = cg_bond_vec / np.linalg.norm(cg_bond_vec)
+        for bead_index in group:
+            bead_to_bond_vec.setdefault(int(bead_index), cg_bond_vec)
 
     compounds = (
         dict()
     )  # (bead_type, remove_tail, remove_head) -> (comp, anchors)
-    finished_beads = set()
     bead_to_comp_dict = dict()
     bead_to_anchors = dict()
     mb_compounds = []
-    n_bonds = len(cg_snap.bonds.group)
+    # Create a compound for every particle, including unbonded ones
+    for bead_index in range(cg_snap.particles.N):
+        bead_type = cg_snap.particles.types[
+            cg_snap.particles.typeid[bead_index]
+        ]
+        key = (
+            bead_type,
+            bead_index in bonds_on_tail,  # remove tail side?
+            bead_index in bonds_on_head,  # remove head side?
+        )
+        if key not in compounds:
+            compounds[key] = _build_template(
+                bead_mapping[bead_type],
+                bond_tail_index[bead_type],
+                bond_head_index[bead_type],
+                remove_tail=key[1],
+                remove_head=key[2],
+            )
+        template, anchors = compounds[key]
+        bead_pos = cg_snap.particles.position[bead_index] * ref_distance
+        comp = mb.clone(template)
+        if bead_index in bead_to_bond_vec:
+            cg_bond_vec = bead_to_bond_vec[bead_index]
+            tail_pos = comp[anchors[1]].xyz[0]
+            head_pos = comp[anchors[0]].xyz[0]
+            head_tail_vec = tail_pos - head_pos
+            head_tail_vec = head_tail_vec / np.linalg.norm(head_tail_vec)
+            normal_vec = np.cross(head_tail_vec, cg_bond_vec)
+            if np.linalg.norm(normal_vec) < 1e-8:
+                # (Anti-)parallel: rotate around any perpendicular axis
+                normal_vec = np.cross(head_tail_vec, [1, 0, 0])
+                if np.linalg.norm(normal_vec) < 1e-8:
+                    normal_vec = np.cross(head_tail_vec, [0, 1, 0])
+            angle = angle_between_vectors(
+                head_tail_vec, cg_bond_vec, degrees=False
+            )
+            comp.rotate(around=normal_vec, theta=angle)
+        comp.translate_to(bead_pos + pos_adjust)
+        mb_compounds.append(comp)
+        bead_to_comp_dict[bead_index] = comp
+        bead_to_anchors[bead_index] = anchors
+        fg_compound.add(comp)
+
+    n_bonds = len(bond_groups)
     print_every = max(1, n_bonds // 20)  # ~20 updates total
-    for bond_count, group in enumerate(cg_snap.bonds.group, start=1):
+    for bond_count, (group, image_shift) in enumerate(
+        zip(bond_groups, image_shifts), start=1
+    ):
         if bond_count % print_every == 0 or bond_count == n_bonds:
             print(
                 f"Backmapping bond {bond_count}/{n_bonds} "
                 f"({100 * bond_count / n_bonds:.0f}%)",
                 flush=True,
             )
-        cg_bond_vec = (
-            cg_snap.particles.position[group[1]]
-            - cg_snap.particles.position[group[0]]
-        )
-        cg_bond_vec = cg_bond_vec / np.linalg.norm(cg_bond_vec)
-        for bead_index in group:
-            if bead_index not in finished_beads:
-                bead_type = cg_snap.particles.types[
-                    cg_snap.particles.typeid[bead_index]
-                ]
-                key = (
-                    bead_type,
-                    int(bead_index) in bonds_on_tail,  # remove tail side?
-                    int(bead_index) in bonds_on_head,  # remove head side?
-                )
-                if key not in compounds:
-                    compounds[key] = _build_template(
-                        bead_mapping[bead_type],
-                        bond_tail_index[bead_type],
-                        bond_head_index[bead_type],
-                        remove_tail=key[1],
-                        remove_head=key[2],
-                    )
-                template, anchors = compounds[key]
-                bead_pos = cg_snap.particles.position[bead_index] * ref_distance
-                comp = mb.clone(template)
-                tail_pos = comp[anchors[1]].xyz[0]
-                head_pos = comp[anchors[0]].xyz[0]
-                head_tail_vec = tail_pos - head_pos
-                head_tail_vec = head_tail_vec / np.linalg.norm(head_tail_vec)
-                normal_vec = np.cross(head_tail_vec, cg_bond_vec)
-                angle = angle_between_vectors(
-                    head_tail_vec, cg_bond_vec, degrees=False
-                )
-                comp.rotate(around=normal_vec, theta=angle)
-                comp.translate_to(bead_pos + pos_adjust)
-                mb_compounds.append(comp)
-                bead_to_comp_dict[bead_index] = comp
-                bead_to_anchors[bead_index] = anchors
-                finished_beads.add(bead_index)
-                fg_compound.add(comp)
-
         tail_anchor_idx = bead_to_anchors[group[0]][1]
         head_anchor_idx = bead_to_anchors[group[1]][0]
         tail_comp = bead_to_comp_dict[group[0]]
@@ -179,6 +238,8 @@ def backmap_snapshot_to_compound(
         if energy_minimize:
             temp_head = mb.clone(head_comp)
             temp_tail = mb.clone(tail_comp)
+            # Bring head next to tail if the bond crosses the box boundary
+            temp_head.translate(image_shift)
             temp_comp = mb.Compound(subcompounds=[temp_tail, temp_head])
             tail_comp_particle = temp_tail[tail_anchor_idx]
             head_comp_particle = temp_head[head_anchor_idx]
@@ -190,9 +251,8 @@ def backmap_snapshot_to_compound(
             temp_tail = temp_comp.children[0]
             temp_head = temp_comp.children[1]
             tail_comp.xyz = temp_tail.xyz
-            head_comp.xyz = temp_head.xyz
+            head_comp.xyz = temp_head.xyz - image_shift
     return fg_compound
-
 
 def backmap_compound(cg_compound):
     """Backmap a fine-grained representation onto a coarse one.
