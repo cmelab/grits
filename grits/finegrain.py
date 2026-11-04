@@ -12,6 +12,7 @@ from grits.utils import (
     reactant_dict,
 )
 
+
 def _build_template(
     smiles, tail_indices, head_indices, remove_tail, remove_head
 ):
@@ -253,6 +254,7 @@ def backmap_snapshot_to_compound(
             tail_comp.xyz = temp_tail.xyz
             head_comp.xyz = temp_head.xyz - image_shift
     return fg_compound
+
 
 def backmap_compound(cg_compound):
     """Backmap a fine-grained representation onto a coarse one.
